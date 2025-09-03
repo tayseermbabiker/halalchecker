@@ -16,6 +16,7 @@
     
     <!-- Preload critical resources -->
     <link rel="preconnect" href="https://api.openai.com">
+    <script src="config.js" onerror="console.log('Config not loaded, using fallback')"></script>
     
     <style>
         :root {
@@ -1787,7 +1788,9 @@
         }
 
         async function extractIngredientsFromImage(base64Image) {
-            const OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY_HERE'; // Replace with your actual OpenAI API key
+            // For development: Replace with your API key
+            // For production: This will be replaced during Netlify build process
+            const OPENAI_API_KEY = window.HALALDETECT_CONFIG?.apiKey || 'YOUR_OPENAI_API_KEY_HERE';
             
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -1898,7 +1901,9 @@ Consider Islamic dietary laws and provide practical guidance for Muslim consumer
         }
 
         async function analyzeIngredientWithAI(ingredient) {
-            const OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY_HERE'; // Replace with your actual OpenAI API key
+            // For development: Replace with your API key
+            // For production: This will be replaced during Netlify build process
+            const OPENAI_API_KEY = window.HALALDETECT_CONFIG?.apiKey || 'YOUR_OPENAI_API_KEY_HERE';
             
             const prompt = `Analyze this ingredient for halal compliance: "${ingredient}". 
 
