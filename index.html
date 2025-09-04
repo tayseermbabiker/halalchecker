@@ -1916,7 +1916,8 @@ Do not include analysis, explanations, or anything else - just the ingredients l
                             {
                                 type: 'image_url',
                                 image_url: {
-                                    url: `data:${fileType};base64,${base64Image}`
+                                    url: `data:${fileType};base64,${base64Image}`,
+                                    detail: "high"
                                 }
                             }
                         ]
@@ -1926,9 +1927,9 @@ Do not include analysis, explanations, or anything else - just the ingredients l
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                console.error('OpenAI API Error:', error);
-                throw new Error(`OpenAI API Error: ${error.error?.message || response.statusText}`);
+                const errorText = await response.text();
+                console.error('OpenAI API Error:', response.status, errorText);
+                throw new Error(`OpenAI API Error: ${response.status} - ${errorText}`);
             }
 
             const result = await response.json();
