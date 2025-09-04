@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HalalDetect - Halal Ingredient Scanner</title>
+    <!-- Layout Updated v2 -->
     <meta name="description" content="Scan ingredients for halal compliance with AI-powered analysis">
     <meta name="theme-color" content="#2E7D32">
     
@@ -161,6 +162,41 @@
             display: block;
         }
 
+        #manual-screen {
+            padding: 0.5rem 0;
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: #f8f9fa;
+            min-height: calc(100vh - 70px);
+            z-index: 100;
+        }
+
+        #manual-screen.active ~ #home-screen {
+            display: none !important;
+        }
+
+        #camera-screen {
+            padding: 0;
+        }
+
+        #camera-screen .camera-section {
+            margin: 0.5rem 1rem 0 1rem;
+        }
+
+        #manual-screen .manual-input {
+            margin: 0.5rem 1rem 0 1rem;
+        }
+
+        #manual-screen .manual-input h2 {
+            margin-top: 0;
+        }
+
+        #manual-screen .scan-counter-bottom {
+            margin: 0.5rem 0 0.3rem 0;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -218,16 +254,13 @@
         }
 
         .install-prompt {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--primary-green);
-            padding: 0.8rem;
+            background: transparent;
+            color: black;
+            padding: 0.6rem;
             border-radius: 12px;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.6rem;
             text-align: center;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .install-prompt.hidden {
@@ -303,7 +336,8 @@
             backdrop-filter: var(--backdrop-blur);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 2rem;
+            padding: 1.5rem;
+            margin: 0.5rem 1rem;
             text-align: center;
             box-shadow: 0 20px 40px var(--card-shadow);
             margin-bottom: 1rem;
@@ -404,6 +438,13 @@
             transform: scale(1.05);
         }
 
+        /* Hide drag-and-drop area on mobile devices */
+        @media (max-width: 768px) {
+            .upload-area {
+                display: none;
+            }
+        }
+
         .upload-icon {
             font-size: 3rem;
             color: var(--primary-green);
@@ -417,8 +458,8 @@
         .manual-input {
             background: var(--surface);
             border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            padding: 1rem;
+            margin: 0.5rem 1rem;
             box-shadow: 0 2px 8px var(--shadow);
         }
 
@@ -657,10 +698,10 @@
 
         .disclaimer {
             background: rgba(255, 255, 255, 0.95);
-            padding: 0.6rem;
-            border-radius: 12px;
-            margin: 0.6rem 0;
-            font-size: 0.8rem;
+            padding: 0.4rem;
+            border-radius: 8px;
+            margin: 0.4rem 0;
+            font-size: 0.7rem;
             line-height: 1.4;
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
@@ -668,8 +709,8 @@
         .premium-banner {
             background: rgba(255, 255, 255, 0.95);
             color: var(--text-primary);
-            padding: 0.8rem;
-            border-radius: 12px;
+            padding: 0.4rem;
+            border-radius: 8px;
             text-align: center;
             margin: 0.8rem 0;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
@@ -807,18 +848,16 @@
             }
             
             .install-prompt {
-                padding: 1.2rem;
-                margin-bottom: 1rem;
-                font-size: 0.9rem;
+                padding: 0.6rem;
+                margin-bottom: 0.6rem;
+                font-size: 0.85rem;
             }
             
             .install-prompt .btn {
-                margin: 0.15rem;
-                padding: 0.5rem 0.8rem;
+                margin: 0.2rem;
+                padding: 0.4rem 0.7rem;
                 font-size: 0.75rem;
-                min-width: 100px;
-                min-height: 36px;
-                border-radius: 8px;
+                border-radius: 10px;
             }
             
             .install-prompt .btn-secondary:first-of-type {
@@ -869,7 +908,6 @@
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
             }
             
             /* Compact home screen layout */
@@ -877,7 +915,6 @@
                 display: flex;
                 flex-direction: column;
                 min-height: calc(100vh - 120px); /* Account for header and bottom nav */
-                justify-content: space-evenly;
                 padding: 1rem 0;
             }
             
@@ -905,12 +942,12 @@
             
             .primary-action-section .btn-primary {
                 width: 85%;
-                max-width: 320px;
-                padding: 1.2rem 1.5rem;
-                font-size: 1.1rem;
+                max-width: 280px;
+                padding: 0.9rem 1.2rem;
+                font-size: 0.9rem;
                 font-weight: 600;
-                border-radius: 16px;
-                min-height: 58px;
+                border-radius: 14px;
+                min-height: 48px;
                 display: inline-block;
                 text-align: center;
                 box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
@@ -923,7 +960,7 @@
             }
             
             .camera-icon {
-                font-size: 1.4rem;
+                font-size: 1.1rem;
                 animation: cameraFloat 2s ease-in-out infinite;
                 display: inline-block;
                 transition: all 0.3s ease;
@@ -952,11 +989,11 @@
 
             .secondary-action-section .btn-secondary {
                 width: 85%;
-                max-width: 320px;
-                padding: 0.8rem 1.2rem;
-                font-size: 0.95rem;
+                max-width: 280px;
+                padding: 0.7rem 1rem;
+                font-size: 0.85rem;
                 border-radius: 12px;
-                min-height: 48px;
+                min-height: 42px;
                 background: rgba(255, 255, 255, 0.9);
                 color: var(--text-primary);
                 border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1104,7 +1141,7 @@
             <div id="home-screen" class="screen active">
                 <div class="install-prompt" id="install-prompt">
                     <div><span data-translate="install-tip">Add this to your home screen for quick access!</span></div>
-                    <div style="margin-top: 0.5rem;">
+                    <div style="margin-top: 0.4rem;">
                         <button class="btn btn-secondary" onclick="installApp()" data-translate="install-now">Install Now</button>
                         <button class="btn btn-secondary" onclick="dismissInstallPrompt()" data-translate="maybe-later">Maybe Later</button>
                     </div>
@@ -1123,30 +1160,17 @@
                 <div class="secondary-action-section">
                     <button class="btn btn-secondary" onclick="showScreen('manual-screen')" data-translate="manual-input">Manual Input</button>
                 </div>
-
-                <!-- Scan Counter (under Manual Input) -->
-                <div class="scan-counter-bottom">
-                    <div class="scan-counter-badge" id="scan-counter-badge">
-                        <span data-translate="scans-remaining">5/5 free</span>
-                    </div>
-                </div>
-
-                <!-- Premium Banner (after scan counter) -->
-                <div class="premium-banner" id="premium-banner">
-                    <div data-translate="upgrade-premium">For Unlimited Scans</div>
-                    <button class="btn btn-primary" onclick="upgradeToPremium()" data-translate="get-premium" style="width: 75%; max-width: 280px; padding: 0.8rem 1rem; font-size: 0.9rem;">Get Premium - $4.99/month</button>
-                </div>
-
-                <!-- Disclaimer Section (pushed down) -->
-                <div class="disclaimer" style="margin-top: 1.5rem;">
-                    <p data-translate="disclaimer">
-                        This tool provides ingredient analysis based on Islamic dietary guidelines for informational purposes. For specific religious guidance or complex cases, please consult with a qualified Islamic scholar or halal certification authority.
-                    </p>
-                </div>
             </div>
 
             <!-- Camera/Upload Screen -->
             <div id="camera-screen" class="screen">
+                <!-- Scan Counter -->
+                <div class="scan-counter-bottom" style="margin-bottom: 0.8rem;">
+                    <div class="scan-counter-badge">
+                        <span data-translate="scans-remaining">5/5 free</span>
+                    </div>
+                </div>
+                
                 <div class="camera-section">
                     <h2 data-translate="scan-title">Scan Ingredient List</h2>
                     <div class="camera-button" onclick="document.getElementById('file-input').click()">
@@ -1161,16 +1185,35 @@
                     <div class="upload-icon">⬆</div>
                     <p data-translate="upload-instruction">Drop image here or click to upload</p>
                 </div>
+
+                <!-- Premium Banner -->
+                <div class="premium-banner" style="margin-top: 1.2rem;">
+                    <div data-translate="upgrade-premium" style="font-size: 0.75rem; margin-bottom: 0.3rem;">For Unlimited Scans</div>
+                    <button class="btn btn-primary" onclick="upgradeToPremium()" data-translate="get-premium" style="width: 70%; max-width: 240px; padding: 0.5rem 0.7rem; font-size: 0.75rem;">Get Premium - $4.99/month</button>
+                </div>
             </div>
 
             <!-- Manual Input Screen -->
             <div id="manual-screen" class="screen">
+                <!-- Scan Counter -->
+                <div class="scan-counter-bottom" style="margin-bottom: 0.8rem;">
+                    <div class="scan-counter-badge">
+                        <span data-translate="scans-remaining">5/5 free</span>
+                    </div>
+                </div>
+                
                 <div class="manual-input">
                     <h2 data-translate="manual-title">Enter Ingredients Manually</h2>
                     <textarea class="text-input" id="manual-ingredients" 
                               placeholder="Enter one ingredient (e.g. gelatin, lecithin, vanilla)..." 
                               data-translate-placeholder="manual-placeholder"></textarea>
                     <button class="btn btn-primary" onclick="analyzeManualIngredients()" data-translate="analyze-btn">Analyze Ingredients</button>
+                </div>
+
+                <!-- Premium Banner -->
+                <div class="premium-banner" style="margin-top: 1.2rem;">
+                    <div data-translate="upgrade-premium" style="font-size: 0.75rem; margin-bottom: 0.3rem;">For Unlimited Scans</div>
+                    <button class="btn btn-primary" onclick="upgradeToPremium()" data-translate="get-premium" style="width: 70%; max-width: 240px; padding: 0.5rem 0.7rem; font-size: 0.75rem;">Get Premium - $4.99/month</button>
                 </div>
             </div>
 
@@ -1359,6 +1402,13 @@
                 </div>
             </div>
         </main>
+
+        <!-- Global Disclaimer - appears on all screens at bottom -->
+        <div class="disclaimer" style="margin: 0.5rem; position: relative; z-index: 50;">
+            <p data-translate="disclaimer">
+                This tool provides ingredient analysis based on Islamic dietary guidelines for informational purposes. For specific religious guidance or complex cases, please consult with a qualified Islamic scholar or halal certification authority.
+            </p>
+        </div>
 
         <nav class="bottom-nav">
             <div class="nav-item active" onclick="showScreen('home-screen')">
@@ -1764,11 +1814,26 @@
             showScreen('loading-screen');
             
             try {
+                // Validate file size (max 20MB for OpenAI API)
+                const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+                if (file.size > maxSize) {
+                    throw new Error(currentLanguage === 'ar' ? 
+                        'حجم الصورة كبير جداً. يرجى استخدام صورة أصغر من 20 ميجابايت' : 
+                        'Image file is too large. Please use an image smaller than 20MB');
+                }
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    throw new Error(currentLanguage === 'ar' ? 
+                        'نوع الملف غير مدعوم. يرجى استخدام ملف صورة' : 
+                        'Unsupported file type. Please use an image file');
+                }
+                
                 // Convert image to base64
                 const base64 = await fileToBase64(file);
                 
                 // Extract ingredients using OpenAI Vision API
-                const ingredients = await extractIngredientsFromImage(base64);
+                const ingredients = await extractIngredientsFromImage(base64, file.type);
                 
                 if (ingredients && ingredients.length > 0) {
                     await analyzeIngredients(ingredients);
@@ -1780,14 +1845,37 @@
                 }
             } catch (error) {
                 console.error('Error analyzing image:', error);
-                showError(currentLanguage === 'ar' ? 
-                    'خطأ في تحليل الصورة' : 
-                    'Error analyzing image');
+                
+                let errorMessage = 'Error analyzing image';
+                if (currentLanguage === 'ar') {
+                    errorMessage = 'خطأ في تحليل الصورة';
+                }
+                
+                // Provide more specific error messages
+                if (error.message.includes('Barcode detected')) {
+                    errorMessage = currentLanguage === 'ar' ? 
+                        'تم اكتشاف باركود. يرجى مسح قائمة المكونات على العبوة أو إدخال المكونات يدوياً' : 
+                        error.message;
+                } else if (error.message.includes('No ingredients detected')) {
+                    errorMessage = currentLanguage === 'ar' ? 
+                        'لم يتم اكتشاف مكونات في الصورة. يرجى التأكد من وضوح قائمة المكونات' : 
+                        error.message;
+                } else if (error.message.includes('No ingredients could be extracted')) {
+                    errorMessage = currentLanguage === 'ar' ? 
+                        'لم يتم استخراج مكونات من الصورة. يرجى التأكد من وضوح قائمة المكونات' : 
+                        error.message;
+                } else if (error.message.includes('OpenAI API Error')) {
+                    errorMessage = currentLanguage === 'ar' ? 
+                        'خطأ في الاتصال بخدمة التحليل. يرجى المحاولة مرة أخرى' : 
+                        'Connection error. Please try again.';
+                }
+                
+                showError(errorMessage);
                 showScreen('camera-screen');
             }
         }
 
-        async function extractIngredientsFromImage(base64Image) {
+        async function extractIngredientsFromImage(base64Image, fileType = 'image/jpeg') {
             // For development: Replace with your API key
             // For production: This will be replaced during Netlify build process
             const OPENAI_API_KEY = window.HALALDETECT_CONFIG?.apiKey || 'YOUR_OPENAI_API_KEY_HERE';
@@ -1799,42 +1887,36 @@
                     'Authorization': `Bearer ${OPENAI_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4-vision-preview',
+                    model: 'gpt-4o-mini',
                     messages: [{
                         role: 'user',
                         content: [
                             {
                                 type: 'text',
-                                text: `Analyze this image for halal compliance. This image may contain:
-1. INGREDIENT LIST - Extract and analyze ingredients
-2. BARCODE - Read the barcode and identify the product, then find ingredient information
+                                text: `Extract ingredients from this image for halal analysis.
+
+IMPORTANT: Your response must start with "INGREDIENTS:" followed by a comma-separated list of ingredients ONLY. Do not include any other text before the ingredients list.
+
+This image may contain:
+1. INGREDIENT LIST - Extract all visible ingredients
+2. BARCODE - If you only see a barcode, respond with "INGREDIENTS: BARCODE_DETECTED"
 3. PRODUCT PACKAGING - Read any visible ingredient information
 
-Read text in ANY language (English, Arabic, Spanish, French, Chinese, etc.) - detect and process whatever language is present.
+Instructions:
+- Read text in ANY language (English, Arabic, Spanish, French, Chinese, etc.)
+- Extract ONLY the ingredient names, not descriptions or nutritional info
+- If you see a barcode only, respond exactly with: "INGREDIENTS: BARCODE_DETECTED"
+- If you cannot read any ingredients clearly, respond with: "INGREDIENTS: NO_INGREDIENTS_DETECTED"
 
-If you see a BARCODE:
-- Identify the barcode number
-- State: "I can see a barcode [number] but cannot access real-time product databases. Please scan the ingredient list on the packaging or enter ingredients manually for accurate halal analysis."
+Format your response like this:
+INGREDIENTS: sugar, salt, wheat flour, vegetable oil, natural flavors
 
-If you see an INGREDIENT LIST:
-- Extract all ingredients and analyze for halal compliance
-- Classify each ingredient as HALAL, SUSPICIOUS, or HARAM
-
-When there are different opinions between Islamic schools of thought, be SPECIFIC about which madhabs hold which positions and their reasoning. For example:
-
-- 'Hanafi scholars consider this haram because...'
-- 'Maliki scholars permit this due to...'  
-- 'Shafi'i and Hanbali schools agree that...'
-- 'There is consensus among all four madhabs that...'
-
-Always cite the specific madhab when mentioning scholarly differences, and explain the Islamic reasoning behind each position. Avoid vague phrases like 'some scholars' or 'some schools of thought' - name the actual madhab and their rationale.
-
-Consider Islamic dietary laws and provide practical guidance for Muslim consumers. Return results as a comma-separated list of ingredients for extraction, then provide detailed analysis.`
+Do not include analysis, explanations, or anything else - just the ingredients list as shown above.`
                             },
                             {
                                 type: 'image_url',
                                 image_url: {
-                                    url: `data:image/jpeg;base64,${base64Image}`
+                                    url: `data:${fileType};base64,${base64Image}`
                                 }
                             }
                         ]
@@ -1843,9 +1925,82 @@ Consider Islamic dietary laws and provide practical guidance for Muslim consumer
                 })
             });
 
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('OpenAI API Error:', error);
+                throw new Error(`OpenAI API Error: ${error.error?.message || response.statusText}`);
+            }
+
             const result = await response.json();
+            
+            if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+                console.error('Invalid OpenAI API response:', result);
+                throw new Error('Invalid response from OpenAI API');
+            }
+            
             const ingredientsText = result.choices[0].message.content;
-            return ingredientsText.split(',').map(i => i.trim()).filter(i => i);
+            
+            if (!ingredientsText || ingredientsText.trim() === '') {
+                console.error('Empty response from OpenAI API');
+                throw new Error('No content in OpenAI API response');
+            }
+            
+            // Parse ingredients from the structured response
+            let ingredients = [];
+            
+            // Look for the INGREDIENTS: prefix
+            if (ingredientsText.includes('INGREDIENTS:')) {
+                const ingredientsPart = ingredientsText.split('INGREDIENTS:')[1].trim();
+                
+                // Handle special cases
+                if (ingredientsPart === 'BARCODE_DETECTED') {
+                    throw new Error('Barcode detected. Please scan the ingredient list on the packaging or enter ingredients manually for accurate halal analysis.');
+                }
+                
+                if (ingredientsPart === 'NO_INGREDIENTS_DETECTED') {
+                    throw new Error('No ingredients detected in the image. Please ensure the ingredient list is clearly visible and try again.');
+                }
+                
+                // Parse comma-separated ingredients
+                ingredients = ingredientsPart.split(',')
+                    .map(i => i.trim())
+                    .filter(i => i && i.length > 1 && !i.toLowerCase().includes('ingredients'));
+            } else {
+                // Fallback: try to extract ingredients from unstructured response
+                const lines = ingredientsText.split('\n');
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine && trimmedLine.length > 2 && 
+                        !trimmedLine.toLowerCase().includes('analysis') && 
+                        !trimmedLine.toLowerCase().includes('barcode') &&
+                        !trimmedLine.startsWith('I can see') &&
+                        !trimmedLine.includes('://')) {
+                        
+                        if (trimmedLine.includes(',')) {
+                            const splitIngredients = trimmedLine.split(',')
+                                .map(i => i.trim())
+                                .filter(i => i && i.length > 1);
+                            ingredients.push(...splitIngredients);
+                        } else {
+                            ingredients.push(trimmedLine);
+                        }
+                    }
+                }
+            }
+            
+            if (ingredients.length === 0) {
+                throw new Error('No ingredients could be extracted from the image. Please ensure the ingredient list is clearly visible.');
+            }
+            
+            // Clean up ingredients (remove numbers, parentheses, etc.)
+            ingredients = ingredients.map(ingredient => {
+                return ingredient.replace(/^\d+\.?\s*/, '') // Remove leading numbers
+                    .replace(/\([^)]*\)/g, '') // Remove content in parentheses
+                    .replace(/\s+/g, ' ') // Normalize spaces
+                    .trim();
+            }).filter(ingredient => ingredient.length > 1);
+            
+            return ingredients;
         }
 
         async function analyzeIngredients(ingredients) {
