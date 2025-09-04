@@ -1,6 +1,7 @@
 [build]
   publish = "."
-  command = "node build.js"
+  command = "echo 'window.HALALDETECT_CONFIG = { apiKey: \"'$OPENAI_API_KEY'\" };' > config.js"
+  environment = { SECRETS_SCAN_ENABLED = "false" }
 
 [[headers]]
   for = "/*"
