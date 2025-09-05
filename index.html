@@ -1160,17 +1160,17 @@
                 <div class="secondary-action-section">
                     <button class="btn btn-secondary" onclick="showScreen('manual-screen')" data-translate="manual-input">Manual Input</button>
                 </div>
+
+                <!-- Scan Counter (under Manual Input tab) -->
+                <div class="scan-counter-bottom">
+                    <div class="scan-counter-badge" id="scan-counter-badge">
+                        <span data-translate="scans-remaining">5/5 free</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Camera/Upload Screen -->
             <div id="camera-screen" class="screen">
-                <!-- Scan Counter -->
-                <div class="scan-counter-bottom" style="margin-bottom: 0.8rem;">
-                    <div class="scan-counter-badge">
-                        <span data-translate="scans-remaining">5/5 free</span>
-                    </div>
-                </div>
-                
                 <div class="camera-section">
                     <h2 data-translate="scan-title">Scan Ingredient List</h2>
                     <div class="camera-button" onclick="document.getElementById('file-input').click()">
@@ -1195,13 +1195,6 @@
 
             <!-- Manual Input Screen -->
             <div id="manual-screen" class="screen">
-                <!-- Scan Counter -->
-                <div class="scan-counter-bottom" style="margin-bottom: 0.8rem;">
-                    <div class="scan-counter-badge">
-                        <span data-translate="scans-remaining">5/5 free</span>
-                    </div>
-                </div>
-                
                 <div class="manual-input">
                     <h2 data-translate="manual-title">Enter Ingredients Manually</h2>
                     <textarea class="text-input" id="manual-ingredients" 
