@@ -1793,6 +1793,17 @@
             analyzeIngredients(ingredients);
         }
 
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (!canScan()) {
+                    showUpgradePrompt();
+                    return;
+                }
+                analyzeImage(file);
+            }
+        }
+
         async function analyzeImage(file) {
             showScreen('loading-screen');
             
@@ -1819,6 +1830,11 @@
                 const ingredients = await extractIngredientsFromImage(base64, file.type);
                 
                 if (ingredients && ingredients.length > 0) {
+                    // Update scan count for successful camera scan
+                    dailyScans++;
+                    updateScanCounter();
+                    saveUserData();
+                    
                     await analyzeIngredients(ingredients);
                 } else {
                     showError(currentLanguage === 'ar' ? 
@@ -1876,25 +1892,31 @@
                         content: [
                             {
                                 type: 'text',
-                                text: `Extract ingredients from this image for halal analysis.
+                                text: `Analyze this image to extract ingredients for halal analysis.
 
-IMPORTANT: Your response must start with "INGREDIENTS:" followed by a comma-separated list of ingredients ONLY. Do not include any other text before the ingredients list.
+CRITICAL: This image may show SUPPLEMENT FACTS, NUTRITION FACTS, or INGREDIENT LISTS. Look for ANY text that lists components/ingredients.
 
 This image may contain:
-1. INGREDIENT LIST - Extract all visible ingredients
-2. BARCODE - If you only see a barcode, respond with "INGREDIENTS: BARCODE_DETECTED"
-3. PRODUCT PACKAGING - Read any visible ingredient information
+1. SUPPLEMENT FACTS - Extract supplement names like "Fish Oil", "EPA", "DHA", "Gelatin", etc.
+2. INGREDIENT LIST - Extract all listed ingredients  
+3. NUTRITION FACTS - Look for ingredient information in fine print
+4. BARCODE ONLY - If you only see a barcode, respond with "INGREDIENTS: BARCODE_DETECTED"
+
+IMPORTANT: Your response must start with "INGREDIENTS:" followed by a comma-separated list ONLY.
 
 Instructions:
+- Read ALL text carefully, including supplement facts, nutrition facts, ingredient lists
+- Extract supplement/ingredient names like: Fish Oil, EPA, DHA, Gelatin, Natural Flavors, etc.
+- Include ANY components that could affect halal status
 - Read text in ANY language (English, Arabic, Spanish, French, Chinese, etc.)
-- Extract ONLY the ingredient names, not descriptions or nutritional info
-- If you see a barcode only, respond exactly with: "INGREDIENTS: BARCODE_DETECTED"
-- If you cannot read any ingredients clearly, respond with: "INGREDIENTS: NO_INGREDIENTS_DETECTED"
+- Ignore amounts, percentages, daily values - just extract the names
+- If you cannot find ANY ingredients/supplements, respond with: "INGREDIENTS: NO_INGREDIENTS_DETECTED"
 
-Format your response like this:
-INGREDIENTS: sugar, salt, wheat flour, vegetable oil, natural flavors
+Examples:
+- Supplement Facts → "INGREDIENTS: Fish Oil, EPA, DHA, Gelatin, Natural Flavors"
+- Food Label → "INGREDIENTS: Wheat Flour, Sugar, Palm Oil, Salt"
 
-Do not include analysis, explanations, or anything else - just the ingredients list as shown above.`
+Format: INGREDIENTS: [list of ingredients/supplements separated by commas]`
                             },
                             {
                                 type: 'image_url',
@@ -1916,6 +1938,7 @@ Do not include analysis, explanations, or anything else - just the ingredients l
             }
 
             const result = await response.json();
+            console.log('🔍 OpenAI API Full Response:', result);
             
             if (!result.choices || !result.choices[0] || !result.choices[0].message) {
                 console.error('Invalid OpenAI API response:', result);
@@ -1923,6 +1946,7 @@ Do not include analysis, explanations, or anything else - just the ingredients l
             }
             
             const ingredientsText = result.choices[0].message.content;
+            console.log('🤖 AI Response Text:', ingredientsText);
             
             if (!ingredientsText || ingredientsText.trim() === '') {
                 console.error('Empty response from OpenAI API');
