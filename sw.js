@@ -1,6 +1,7 @@
-const CACHE_NAME = 'halalchecker-v1.0.0';
-const STATIC_CACHE = 'halalchecker-static-v1.0.0';
-const DYNAMIC_CACHE = 'halalchecker-dynamic-v1.0.0';
+const CACHE_VERSION = '1.0.1'; // Increment this for updates
+const CACHE_NAME = `halalchecker-v${CACHE_VERSION}`;
+const STATIC_CACHE = `halalchecker-static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `halalchecker-dynamic-v${CACHE_VERSION}`;
 
 // Resources to cache immediately
 const STATIC_ASSETS = [
@@ -89,9 +90,30 @@ self.addEventListener('fetch', event => {
   event.respondWith(handleDynamicRequest(request));
 });
 
-// Handle static asset requests (cache first strategy)
+// Handle static asset requests (network first for main HTML, then cache)
 async function handleStaticRequest(request) {
   try {
+    // For the main HTML file, try network first to get updates
+    if (request.url.includes('index.html') || request.url.endsWith('/')) {
+      try {
+        console.log('[SW] Checking for updates:', request.url);
+        const networkResponse = await fetch(request);
+        
+        if (networkResponse.ok) {
+          const cache = await caches.open(STATIC_CACHE);
+          cache.put(request, networkResponse.clone());
+          
+          // Notify clients about the update
+          notifyClientsOfUpdate();
+          
+          return networkResponse;
+        }
+      } catch (networkError) {
+        console.log('[SW] Network failed, falling back to cache');
+      }
+    }
+    
+    // For other assets or if network fails, use cache first
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       console.log('[SW] Serving from cache:', request.url);
@@ -287,5 +309,17 @@ self.addEventListener('periodicsync', event => {
     );
   }
 });
+
+// Notify clients about updates
+function notifyClientsOfUpdate() {
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'UPDATE_AVAILABLE',
+        message: 'New version available! Reload to get the latest features.'
+      });
+    });
+  });
+}
 
 console.log('[SW] Service worker loaded successfully');
