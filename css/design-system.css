@@ -1,0 +1,432 @@
+/* HalalDetect Islamic Parenting Hub - Design System */
+
+/* ====================
+   Google Fonts Import
+   ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* ====================
+   Design Tokens
+   ==================== */
+:root {
+    /* Color Palette */
+    --primary-teal: #218089;
+    --cream-bg: #FDF8F3;
+    --soft-brown: #5E5240;
+    --deep-teal: #1A6873;
+    --gentle-orange: #E68161;
+    --sage-green: #8BA888;
+    --warm-gray: #A7A9A9;
+
+    /* Typography Colors */
+    --text-primary: #2C3E50;
+    --text-secondary: var(--warm-gray);
+    --text-light: #FFFFFF;
+
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    --spacing-2xl: 4rem;
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    /* Typography Sizes */
+    --h1-desktop: 42px;
+    --h1-mobile: 32px;
+    --h2-desktop: 32px;
+    --h2-mobile: 24px;
+    --h3-desktop: 24px;
+    --h3-mobile: 20px;
+    --body-text: 16px;
+    --body-text-large: 18px;
+    --small-text: 14px;
+
+    /* Line Heights */
+    --line-height-tight: 1.3;
+    --line-height-normal: 1.6;
+    --line-height-relaxed: 1.8;
+
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.4s ease;
+}
+
+/* ====================
+   Base Styles
+   ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: var(--body-text);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background-color: var(--cream-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ====================
+   Typography
+   ==================== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    line-height: var(--line-height-tight);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+h1 {
+    font-size: var(--h1-mobile);
+    font-weight: 700;
+}
+
+h2 {
+    font-size: var(--h2-mobile);
+}
+
+h3 {
+    font-size: var(--h3-mobile);
+}
+
+@media (min-width: 768px) {
+    h1 {
+        font-size: var(--h1-desktop);
+    }
+
+    h2 {
+        font-size: var(--h2-desktop);
+    }
+
+    h3 {
+        font-size: var(--h3-desktop);
+    }
+}
+
+p {
+    margin-bottom: var(--spacing-sm);
+}
+
+a {
+    color: var(--primary-teal);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--deep-teal);
+}
+
+/* ====================
+   Buttons
+   ==================== */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: var(--body-text);
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background-color: var(--deep-teal);
+    color: var(--text-light);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-teal);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    color: var(--text-light);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--deep-teal);
+    border: 2px solid var(--deep-teal);
+}
+
+.btn-secondary:hover {
+    background-color: var(--deep-teal);
+    color: var(--text-light);
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: var(--body-text-large);
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: var(--small-text);
+}
+
+/* ====================
+   Cards
+   ==================== */
+.card {
+    background-color: var(--cream-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-4px);
+}
+
+.card-clickable {
+    cursor: pointer;
+}
+
+/* ====================
+   Container & Layout
+   ==================== */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.container-wide {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.container-narrow {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+section {
+    padding: var(--spacing-2xl) 0;
+}
+
+@media (min-width: 768px) {
+    section {
+        padding: 4rem 0;
+    }
+}
+
+/* ====================
+   Grid System
+   ==================== */
+.grid {
+    display: grid;
+    gap: var(--spacing-lg);
+}
+
+.grid-2 {
+    grid-template-columns: 1fr;
+}
+
+.grid-3 {
+    grid-template-columns: 1fr;
+}
+
+.grid-4 {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ====================
+   Islamic Pattern Background
+   ==================== */
+.islamic-pattern {
+    position: relative;
+}
+
+.islamic-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23218089' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 1;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* ====================
+   Utility Classes
+   ==================== */
+.text-center {
+    text-align: center;
+}
+
+.text-teal {
+    color: var(--primary-teal);
+}
+
+.text-orange {
+    color: var(--gentle-orange);
+}
+
+.text-green {
+    color: var(--sage-green);
+}
+
+.bg-teal {
+    background-color: var(--primary-teal);
+}
+
+.bg-teal-light {
+    background-color: rgba(33, 128, 137, 0.1);
+}
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
+
+.flex {
+    display: flex;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+/* ====================
+   Accessibility
+   ==================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+    outline: 2px solid var(--primary-teal);
+    outline-offset: 2px;
+}
+
+/* ====================
+   Animations
+   ==================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* ====================
+   Form Elements
+   ==================== */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-size: var(--body-text);
+    border: 2px solid var(--warm-gray);
+    border-radius: var(--radius-sm);
+    background-color: white;
+    transition: border-color var(--transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-teal);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}

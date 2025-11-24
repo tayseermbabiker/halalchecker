@@ -1,0 +1,9 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cream background -->
+  <rect width="32" height="32" fill="#FDF8F3" rx="4"/>
+
+  <!-- Crescent Moon in Teal -->
+  <g transform="translate(16, 16)">
+    <path d="M 0 -10 A 10 10 0 1 0 0 10 A 7.5 7.5 0 1 1 0 -10" fill="#218089"/>
+  </g>
+</svg>

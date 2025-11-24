@@ -1,2465 +1,555 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HalalDetect - Halal Ingredient Scanner</title>
-    <!-- Layout Updated v2 -->
-    <meta name="description" content="Scan ingredients for halal compliance with AI-powered analysis">
-    <meta name="theme-color" content="#2E7D32">
-    
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="HalalDetect">
-    
-    <!-- Preload critical resources -->
-    <link rel="preconnect" href="https://api.openai.com">
-    <script src="config.js" onerror="console.log('Config not loaded, using fallback')"></script>
-    
-    <style>
-        :root {
-            --primary-green: #00C851;
-            --secondary-green: #00E676;
-            --accent-teal: #26C6DA;
-            --light-green: #E8F8F5;
-            --halal-green: #00E676;
-            --suspicious-yellow: #FFD54F;
-            --haram-red: #FF5722;
-            --background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            --surface: rgba(255, 255, 255, 0.95);
-            --card-shadow: rgba(0, 0, 0, 0.15);
-            --text-primary: #2C3E50;
-            --text-secondary: #7F8C8D;
-            --border: rgba(255, 255, 255, 0.2);
-            --gradient: linear-gradient(135deg, #00C851 0%, #26C6DA 50%, #00E676 100%);
-            --glass-effect: rgba(255, 255, 255, 0.1);
-            --backdrop-blur: blur(15px);
-        }
 
-        [dir="rtl"] {
-            font-family: 'Segoe UI', 'Arial', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--background);
-            z-index: -1;
-        }
-
-        .app-container {
-            max-width: 100%;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: var(--gradient);
-            color: white;
-            padding: 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 100%;
-            position: relative;
-        }
-        
-        .scan-counter-bottom {
-            text-align: center;
-            margin: 1.2rem 0;
-        }
-        
-        .scan-counter-badge {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: inline-block;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .logo-icon {
-            background: rgba(255, 255, 255, 0.2);
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-
-        .lang-toggle {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .lang-toggle:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 1rem;
-        }
-
-        .screen {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        #manual-screen {
-            padding: 0.5rem 1rem;
-            margin-top: 0;
-        }
-
-        #manual-screen.active ~ #home-screen {
-            display: none !important;
-        }
-
-        #camera-screen {
-            padding: 0.5rem 1rem;
-            margin-top: 0;
-        }
-
-        #camera-screen .camera-section {
-            margin: 0;
-        }
-
-        #manual-screen .manual-input {
-            margin: 0;
-        }
-
-        #manual-screen .manual-input h2 {
-            margin-top: 0;
-        }
-
-        #manual-screen .scan-counter-bottom {
-            margin: 0.5rem 0 0.3rem 0;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .welcome-section {
-            text-align: center;
-            padding: 0.8rem 1rem;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transform: translateY(0);
-            transition: all 0.3s ease;
-        }
-
-        .welcome-section:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 40px var(--card-shadow);
-        }
-
-        .app-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 0.5rem;
-            background: var(--gradient);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: white;
-            box-shadow: 0 8px 25px rgba(0, 200, 81, 0.3);
-        }
-
-        .app-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-green);
-            margin-bottom: 0.5rem;
-        }
-
-        .scan-counter {
-            background: rgba(0, 200, 81, 0.1);
-            color: var(--text-secondary);
-            padding: 0.3rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            margin-bottom: 0.3rem;
-            display: inline-block;
-            border: 1px solid rgba(0, 200, 81, 0.1);
-            opacity: 0.8;
-        }
-
-        .install-prompt {
-            background: transparent;
-            color: black;
-            padding: 0.6rem;
-            border-radius: 12px;
-            margin-bottom: 0.6rem;
-            text-align: center;
-            font-size: 0.85rem;
-        }
-
-        .install-prompt.hidden {
-            display: none;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 0.3rem;
-            min-width: 120px;
-        }
-
-        .btn-primary {
-            background: var(--gradient);
-            color: white;
-            box-shadow: 0 8px 25px rgba(0, 200, 81, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(0, 200, 81, 0.5);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--text-primary);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-            padding: 0.8rem 0;
-            margin-bottom: 1rem;
-        }
-
-        .camera-section {
-            background: var(--surface);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 1.5rem;
-            margin: 0.5rem 1rem;
-            text-align: center;
-            box-shadow: 0 20px 40px var(--card-shadow);
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .camera-section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 25px 50px var(--card-shadow);
-        }
-
-        .camera-button {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            background: var(--gradient);
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 200, 81, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .camera-button::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(45deg);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        .camera-button:hover {
-            transform: scale(1.05);
-        }
-
-        .camera-button:active {
-            transform: scale(0.95);
-        }
-
-        .camera-icon {
-            font-size: 3rem;
-            color: white;
-        }
-
-        .upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 20px;
-            padding: 3rem 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            margin-bottom: 1rem;
-            background: var(--glass-effect);
-            backdrop-filter: var(--backdrop-blur);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .upload-area::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,200,81,0.1), transparent);
-            transition: left 0.5s;
-        }
-
-        .upload-area:hover::before {
-            left: 100%;
-        }
-
-        .upload-area:hover {
-            border-color: var(--primary-green);
-            background: var(--light-green);
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px var(--card-shadow);
-        }
-
-        .upload-area.dragover {
-            border-color: var(--primary-green);
-            background: var(--light-green);
-            transform: scale(1.05);
-        }
-
-        /* Hide drag-and-drop area on mobile devices */
-        @media (max-width: 768px) {
-            .upload-area {
-                display: none;
-            }
-        }
-
-        .upload-icon {
-            font-size: 3rem;
-            color: var(--primary-green);
-            margin-bottom: 1rem;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .manual-input {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1rem;
-            margin: 0.5rem 1rem;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
-
-        .text-input {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            resize: vertical;
-            min-height: 120px;
-            transition: border-color 0.3s ease;
-        }
-
-        .text-input:focus {
-            outline: none;
-            border-color: var(--primary-green);
-        }
-
-        .results-container {
-            margin-top: 1rem;
-            max-height: 60vh;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-        
-        .results-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .results-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-        
-        .results-container::-webkit-scrollbar-thumb {
-            background: var(--primary-green);
-            border-radius: 3px;
-        }
-        
-        .results-container::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
-        }
-
-        .ingredient-item {
-            background: var(--surface);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 15px 35px var(--card-shadow);
-            border-left: 4px solid var(--border);
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: visible;
-            word-wrap: break-word;
-            hyphens: auto;
-        }
-
-        .ingredient-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--gradient);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .ingredient-item:hover::before {
-            transform: scaleX(1);
-        }
-
-        .ingredient-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 40px var(--card-shadow);
-        }
-
-        .ingredient-item.halal {
-            border-left-color: var(--halal-green);
-        }
-
-        .ingredient-item.suspicious {
-            border-left-color: var(--suspicious-yellow);
-        }
-
-        .ingredient-item.haram {
-            border-left-color: var(--haram-red);
-        }
-
-        .ingredient-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .ingredient-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .ingredient-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-halal {
-            background: var(--halal-green);
-            color: white;
-        }
-
-        .status-suspicious {
-            background: var(--suspicious-yellow);
-            color: white;
-        }
-
-        .status-haram {
-            background: var(--haram-red);
-            color: white;
-        }
-
-        .ingredient-explanation {
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-            line-height: 1.5;
-            word-wrap: break-word;
-            hyphens: auto;
-            max-width: 100%;
-        }
-
-        .alternative-links {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .alternative-link {
-            background: var(--light-green);
-            color: var(--primary-green);
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            text-decoration: none;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .alternative-link:hover {
-            background: var(--primary-green);
-            color: white;
-        }
-
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--light-green);
-            border-top: 4px solid var(--primary-green);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .bottom-nav {
-            background: var(--surface);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid var(--border);
-            border-bottom: none;
-            border-radius: 20px 20px 0 0;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-around;
-            box-shadow: 0 -10px 30px var(--card-shadow);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 12px;
-            position: relative;
-        }
-
-        .nav-item:hover {
-            color: var(--primary-green);
-            background: var(--glass-effect);
-        }
-
-        .nav-item.active {
-            color: var(--primary-green);
-            background: var(--light-green);
-        }
-
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 3px;
-            background: var(--primary-green);
-            border-radius: 2px;
-        }
-
-        .nav-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .nav-label {
-            font-size: 0.8rem;
-        }
-
-        .disclaimer {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 0.4rem;
-            border-radius: 8px;
-            margin: 0.4rem 0;
-            font-size: 0.7rem;
-            line-height: 1.4;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .premium-banner {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--text-primary);
-            padding: 0.4rem;
-            border-radius: 8px;
-            text-align: center;
-            margin: 0.8rem 0;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .premium-banner::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: premium-shine 4s infinite;
-        }
-
-        @keyframes premium-shine {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .premium-banner.hidden {
-            display: none;
-        }
-
-        .history-item {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 8px var(--shadow);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .history-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow);
-        }
-
-        .history-date {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .history-summary {
-            font-weight: 600;
-        }
-
-        .settings-section {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: var(--border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .toggle-switch.active {
-            background: var(--primary-green);
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s ease;
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(26px);
-        }
-
-        @media (max-width: 480px) {
-            .header-content {
-                padding: 0 0.5rem;
-            }
-            
-            .main-content {
-                padding: 0.3rem;
-            }
-            
-            .welcome-section {
-                padding: 1rem 0.8rem;
-                margin-bottom: 0.5rem;
-            }
-            
-            .app-icon {
-                width: 50px;
-                height: 50px;
-                margin: 0 auto 0.3rem;
-                font-size: 1.2rem;
-            }
-            
-            .app-title {
-                font-size: 1.3rem;
-                margin-bottom: 0.3rem;
-            }
-            
-            .scan-counter {
-                font-size: 0.75rem;
-                padding: 0.3rem 0.6rem;
-                margin-bottom: 0.3rem;
-            }
-            
-            .install-prompt {
-                padding: 0.6rem;
-                margin-bottom: 0.6rem;
-                font-size: 0.85rem;
-            }
-            
-            .install-prompt .btn {
-                margin: 0.2rem;
-                padding: 0.4rem 0.7rem;
-                font-size: 0.75rem;
-                border-radius: 10px;
-            }
-            
-            .install-prompt .btn-secondary:first-of-type {
-                background: var(--primary-green);
-                color: white;
-                border: none;
-            }
-            
-            .install-prompt .btn-secondary:last-of-type {
-                background: transparent;
-                color: var(--primary-green);
-                border: 1px solid var(--primary-green);
-            }
-            
-            .action-buttons {
-                gap: 0.5rem;
-                padding: 0.3rem 0;
-            }
-            
-            .btn {
-                padding: 0.7rem 1.2rem;
-                font-size: 0.85rem;
-                margin: 0.2rem;
-                min-width: 100px;
-            }
-            
-            .disclaimer {
-                padding: 0.6rem;
-                font-size: 0.75rem;
-                margin: 0.3rem 0;
-                line-height: 1.3;
-            }
-            
-            .camera-button {
-                width: 100px;
-                height: 100px;
-            }
-            
-            
-            /* Ensure everything fits in viewport */
-            .app-container {
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .main-content {
-                flex: 1;
-            }
-            
-            /* Compact home screen layout */
-            #home-screen {
-                padding: 1rem 0;
-            }
-            
-            /* Create visual sections */
-            .mobile-section {
-                margin-bottom: 0.8rem;
-            }
-            
-            /* Consistent card styling */
-            .mobile-card {
-                background: var(--surface);
-                backdrop-filter: var(--backdrop-blur);
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                box-shadow: 0 8px 24px var(--card-shadow);
-                margin-bottom: 0.8rem;
-                transition: all 0.3s ease;
-            }
-            
-            /* Primary action button styling */
-            .primary-action-section {
-                text-align: center;
-                margin-bottom: 1rem;
-            }
-            
-            .primary-action-section .btn-primary {
-                width: 85%;
-                max-width: 280px;
-                padding: 0.9rem 1.2rem;
-                font-size: 0.9rem;
-                font-weight: 600;
-                border-radius: 14px;
-                min-height: 48px;
-                display: inline-block;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-                transition: all 0.3s ease;
-            }
-            
-            .primary-action-section .btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-            }
-            
-            .camera-icon {
-                font-size: 1.1rem;
-                animation: cameraFloat 2s ease-in-out infinite;
-                display: inline-block;
-                transition: all 0.3s ease;
-            }
-            
-            .primary-action-section .btn-primary:hover .camera-icon {
-                animation: cameraShake 0.5s ease-in-out;
-                transform: scale(1.1);
-            }
-            
-            @keyframes cameraFloat {
-                0%, 100% { transform: translateY(0px); }
-                50% { transform: translateY(-4px); }
-            }
-            
-            @keyframes cameraShake {
-                0%, 100% { transform: translateX(0); }
-                25% { transform: translateX(-2px) rotate(-5deg); }
-                75% { transform: translateX(2px) rotate(5deg); }
-            }
-            
-            .secondary-action-section {
-                text-align: center;
-                margin-bottom: 1rem;
-            }
-
-            .secondary-action-section .btn-secondary {
-                width: 85%;
-                max-width: 280px;
-                padding: 0.7rem 1rem;
-                font-size: 0.85rem;
-                border-radius: 12px;
-                min-height: 42px;
-                background: rgba(255, 255, 255, 0.9);
-                color: var(--text-primary);
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                display: inline-block;
-                text-align: center;
-            }
-            
-            .bottom-nav {
-                padding: 0.8rem;
-            }
-            
-            .nav-label {
-                font-size: 0.7rem;
-            }
-        }
-
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border-left: 4px solid #c62828;
-        }
-
-        .success-message {
-            background: #e8f5e8;
-            color: #2e7d32;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border-left: 4px solid #2e7d32;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Legal Pages Styles */
-        .legal-links {
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .legal-links h3 {
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-
-        .legal-item {
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .legal-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .arrow {
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-        }
-
-        .legal-content {
-            padding: 2rem;
-            max-width: 100%;
-            overflow-y: auto;
-        }
-
-        .legal-content h2 {
-            color: var(--primary-green);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .legal-content h3 {
-            color: var(--text-primary);
-            margin: 1.5rem 0 0.8rem 0;
-        }
-
-        .content-section {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-
-        .content-section p, .content-section li {
-            color: var(--text-primary);
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .content-section ul {
-            padding-left: 1.2rem;
-        }
-
-        .contact-info {
-            background: var(--light-green);
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .contact-detail {
-            font-size: 1.1rem;
-        }
-
-        .contact-detail a {
-            color: var(--primary-green);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .contact-form {
-            margin: 1.5rem 0;
-        }
-
-        .back-btn {
-            width: auto;
-            padding: 0.8rem 1.5rem;
-            margin-top: 1rem;
-        }
-    </style>
+    <!-- Primary Meta Tags -->
+    <title>HalalDetect - Raising Confident Muslim Kids in the West | Islamic Parenting</title>
+    <meta name="title" content="HalalDetect - Raising Confident Muslim Kids in the West | Islamic Parenting">
+    <meta name="description" content="Navigate the unique challenges of raising Muslim children in USA, UK, Canada, and Australia. From identity struggles to Islamophobia, get practical Islamic parenting advice rooted in faith and modern understanding.">
+    <meta name="keywords" content="Islamic parenting, Muslim kids, raising Muslim children, Islamic education, prophet stories, halal parenting, Muslim family">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://halaldetect.com/">
+    <meta property="og:title" content="HalalDetect - Raising Confident Muslim Kids in the West">
+    <meta property="og:description" content="Navigate the unique challenges of raising Muslim children in USA, UK, Canada, and Australia. Get practical Islamic parenting advice rooted in faith.">
+    <meta property="og:image" content="https://halaldetect.com/assets/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://halaldetect.com/">
+    <meta property="twitter:title" content="HalalDetect - Raising Confident Muslim Kids in the West">
+    <meta property="twitter:description" content="Navigate the unique challenges of raising Muslim children with practical Islamic parenting advice.">
+    <meta property="twitter:image" content="https://halaldetect.com/assets/og-image.jpg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#218089">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://halaldetect.com/">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "HalalDetect",
+      "description": "Islamic parenting guidance for raising confident Muslim kids in the West",
+      "url": "https://halaldetect.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://halaldetect.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
 </head>
 <body>
-    <div class="app-container">
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">
-                    <span class="logo-icon">H</span>
-                    <span data-translate="app-name">HalalDetect</span>
-                </div>
-                <button class="lang-toggle" onclick="toggleLanguage()">
-                    <span id="lang-text">العربية</span>
-                </button>
-            </div>
-        </header>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <span class="logo-icon">☪</span>
+                <span class="logo-text-bold">Halal</span><span class="logo-text-regular">Detect</span>
+            </a>
 
-        <main class="main-content">
-            <!-- Home Screen -->
-            <div id="home-screen" class="screen active">
-                <div class="install-prompt" id="install-prompt">
-                    <div><span data-translate="install-tip">Add this to your home screen for quick access!</span></div>
-                    <div style="margin-top: 0.4rem;">
-                        <button class="btn btn-secondary" onclick="installApp()" data-translate="install-now">Install Now</button>
-                        <button class="btn btn-secondary" onclick="dismissInstallPrompt()" data-translate="maybe-later">Maybe Later</button>
-                    </div>
-                </div>
-
-
-
-                <!-- Primary Actions Section -->
-                <div class="primary-action-section">
-                    <button class="btn btn-primary" onclick="showScreen('camera-screen')" data-translate="scan-ingredients">
-                        <span class="camera-icon">📷</span>Scan Ingredients
-                    </button>
-                </div>
-
-                <!-- Secondary Actions Section -->
-                <div class="secondary-action-section">
-                    <button class="btn btn-secondary" onclick="showScreen('manual-screen')" data-translate="manual-input">Manual Input</button>
-                </div>
-
-                <!-- Scan Counter (under Manual Input tab) -->
-                <div class="scan-counter-bottom">
-                    <div class="scan-counter-badge" id="scan-counter-badge">
-                        <span data-translate="scans-remaining">5/5 free</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Camera/Upload Screen -->
-            <div id="camera-screen" class="screen">
-                <div class="camera-section">
-                    <h2 data-translate="scan-title">Scan Ingredient List</h2>
-                    <div class="camera-button" onclick="document.getElementById('file-input').click()">
-                        <div class="camera-icon">◉</div>
-                    </div>
-                    <input type="file" id="file-input" class="file-input" accept="image/*" onchange="handleImageUpload(event)">
-                    <p data-translate="camera-instruction">Tap to take photo or upload image</p>
-                </div>
-
-                <div class="upload-area" onclick="document.getElementById('file-input').click()" 
-                     ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                    <div class="upload-icon">⬆</div>
-                    <p data-translate="upload-instruction">Drop image here or click to upload</p>
-                </div>
-
-                <!-- Premium Banner -->
-                <div class="premium-banner" style="margin-top: 1.2rem;">
-                    <div data-translate="upgrade-premium" style="font-size: 0.75rem; margin-bottom: 0.3rem;">For Unlimited Scans</div>
-                    <button class="btn btn-primary" onclick="upgradeToPremium()" data-translate="get-premium" style="width: 70%; max-width: 240px; padding: 0.5rem 0.7rem; font-size: 0.75rem;">Get Premium - $4.99/month</button>
-                </div>
-            </div>
-
-            <!-- Manual Input Screen -->
-            <div id="manual-screen" class="screen">
-                <div class="manual-input">
-                    <h2 data-translate="manual-title">Enter Ingredients Manually</h2>
-                    <textarea class="text-input" id="manual-ingredients" 
-                              placeholder="Enter one ingredient (e.g. gelatin, lecithin, vanilla)..." 
-                              data-translate-placeholder="manual-placeholder"></textarea>
-                    <button class="btn btn-primary" onclick="analyzeManualIngredients()" data-translate="analyze-btn">Analyze Ingredients</button>
-                </div>
-
-                <!-- Premium Banner -->
-                <div class="premium-banner" style="margin-top: 1.2rem;">
-                    <div data-translate="upgrade-premium" style="font-size: 0.75rem; margin-bottom: 0.3rem;">For Unlimited Scans</div>
-                    <button class="btn btn-primary" onclick="upgradeToPremium()" data-translate="get-premium" style="width: 70%; max-width: 240px; padding: 0.5rem 0.7rem; font-size: 0.75rem;">Get Premium - $4.99/month</button>
-                </div>
-            </div>
-
-            <!-- Results Screen -->
-            <div id="results-screen" class="screen">
-                <div class="results-container" id="results-container">
-                    <!-- Results will be populated here -->
-                </div>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="shareResults()" data-translate="share-results">📱 Share Results</button>
-                    <button class="btn btn-secondary" onclick="showScreen('home-screen')" data-translate="scan-another">🔄 Scan Another</button>
-                </div>
-            </div>
-
-            <!-- Loading Screen -->
-            <div id="loading-screen" class="screen">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p data-translate="analyzing">Analyzing ingredients...</p>
-                </div>
-            </div>
-
-            <!-- History Screen -->
-            <div id="history-screen" class="screen">
-                <h2 data-translate="scan-history">Scan History</h2>
-                <div id="history-list">
-                    <!-- History items will be populated here -->
-                </div>
-            </div>
-
-            <!-- Settings Screen -->
-            <div id="settings-screen" class="screen">
-                <div class="settings-section">
-                    <h2 data-translate="settings-title">Settings</h2>
-                    <div class="setting-item">
-                        <span data-translate="notifications">Notifications</span>
-                        <div class="toggle-switch" onclick="toggleSetting('notifications')"></div>
-                    </div>
-                    <div class="setting-item">
-                        <span data-translate="business-features">Business Features</span>
-                        <div class="toggle-switch" onclick="toggleBusinessFeatures()"></div>
-                    </div>
-                    <div class="setting-item">
-                        <span data-translate="community-sharing">Community Sharing</span>
-                        <div class="toggle-switch" onclick="toggleSetting('sharing')"></div>
-                    </div>
-                    
-                    <div class="legal-links">
-                        <h3 data-translate="legal-section">Legal</h3>
-                        <div class="setting-item legal-item" onclick="showScreen('about-screen')">
-                            <span data-translate="about-us">About Us</span>
-                            <span class="arrow">›</span>
-                        </div>
-                        <div class="setting-item legal-item" onclick="showScreen('terms-screen')">
-                            <span data-translate="terms-service">Terms of Service</span>
-                            <span class="arrow">›</span>
-                        </div>
-                        <div class="setting-item legal-item" onclick="showScreen('privacy-screen')">
-                            <span data-translate="privacy-policy">Privacy Policy</span>
-                            <span class="arrow">›</span>
-                        </div>
-                        <div class="setting-item legal-item" onclick="showScreen('contact-screen')">
-                            <span data-translate="contact-us">Contact Us</span>
-                            <span class="arrow">›</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- About Us Screen -->
-            <div id="about-screen" class="screen">
-                <div class="legal-content">
-                    <h2 data-translate="about-us">About Us</h2>
-                    <div class="content-section">
-                        <p data-translate="about-intro">HalalDetect is an AI-powered halal ingredient checker designed to help Muslims make informed dietary choices with confidence.</p>
-                        
-                        <h3 data-translate="our-mission">Our Mission</h3>
-                        <p data-translate="mission-text">To provide accurate, reliable halal ingredient verification using advanced artificial intelligence, respecting all schools of Islamic jurisprudence.</p>
-                        
-                        <h3 data-translate="features">Key Features</h3>
-                        <ul>
-                            <li data-translate="feature-ai">AI-powered ingredient analysis</li>
-                            <li data-translate="feature-multilingual">Bilingual support (Arabic & English)</li>
-                            <li data-translate="feature-schools">Consideration of different Islamic schools</li>
-                            <li data-translate="feature-offline">Offline capability</li>
+            <nav class="nav-desktop">
+                <ul class="nav-links">
+                    <li class="dropdown">
+                        <a href="/by-age.html" class="dropdown-toggle">By Age</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/parenting-babies-toddlers.html">Babies & Toddlers (0-3 years)</a></li>
+                            <li><a href="/parenting-preschool.html">Preschool (3-5 years)</a></li>
+                            <li><a href="/parenting-elementary.html">Elementary (6-12 years)</a></li>
+                            <li><a href="/parenting-teens.html">Teens (13-18 years)</a></li>
                         </ul>
-                        
-                        <h3 data-translate="disclaimer-title">Important Disclaimer</h3>
-                        <p data-translate="disclaimer-full">This tool provides ingredient analysis for informational purposes only. For definitive rulings on complex cases or specific religious guidance, please consult with qualified Islamic scholars or halal certification authorities.</p>
-                    </div>
-                    <button class="btn btn-secondary back-btn" onclick="showScreen('settings-screen')" data-translate="back">← Back</button>
-                </div>
-            </div>
-
-            <!-- Terms of Service Screen -->
-            <div id="terms-screen" class="screen">
-                <div class="legal-content">
-                    <h2 data-translate="terms-service">Terms of Service</h2>
-                    <div class="content-section">
-                        <p><strong data-translate="effective-date">Effective Date:</strong> <span data-translate="current-date">January 2025</span></p>
-                        
-                        <h3 data-translate="acceptance">1. Acceptance of Terms</h3>
-                        <p data-translate="acceptance-text">By using HalalDetect, you agree to these Terms of Service and acknowledge that the app provides informational guidance only.</p>
-                        
-                        <h3 data-translate="service-description">2. Service Description</h3>
-                        <p data-translate="service-text">HalalDetect analyzes ingredients using AI technology to provide halal/haram classifications based on Islamic dietary guidelines.</p>
-                        
-                        <h3 data-translate="user-responsibilities">3. User Responsibilities</h3>
-                        <p data-translate="responsibilities-text">Users are responsible for verifying results with qualified Islamic authorities for important dietary decisions.</p>
-                        
-                        <h3 data-translate="limitations">4. Limitations</h3>
-                        <p data-translate="limitations-text">Results are for informational purposes only. HalalDetect is not liable for dietary decisions based on app results.</p>
-                        
-                        <h3 data-translate="contact-terms">5. Contact</h3>
-                        <p data-translate="contact-terms-text">For questions about these terms, contact us at: Eterna.eneral@gmail.com</p>
-                    </div>
-                    <button class="btn btn-secondary back-btn" onclick="showScreen('settings-screen')" data-translate="back">← Back</button>
-                </div>
-            </div>
-
-            <!-- Privacy Policy Screen -->
-            <div id="privacy-screen" class="screen">
-                <div class="legal-content">
-                    <h2 data-translate="privacy-policy">Privacy Policy</h2>
-                    <div class="content-section">
-                        <p><strong data-translate="effective-date">Effective Date:</strong> <span data-translate="current-date">January 2025</span></p>
-                        
-                        <h3 data-translate="info-collection">1. Information We Collect</h3>
-                        <p data-translate="collection-text">We collect uploaded images, ingredient lists, and usage statistics to improve our service. All data is processed locally when possible.</p>
-                        
-                        <h3 data-translate="info-use">2. How We Use Your Information</h3>
-                        <ul>
-                            <li data-translate="use-analysis">Ingredient analysis and halal verification</li>
-                            <li data-translate="use-improvement">Service improvement and feature development</li>
-                            <li data-translate="use-support">Customer support and technical assistance</li>
+                    </li>
+                    <li class="dropdown">
+                        <a href="/challenges.html" class="dropdown-toggle">Challenges</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/challenges-identity.html">Identity & Belonging</a></li>
+                            <li><a href="/challenges-islamophobia.html">School & Islamophobia</a></li>
+                            <li><a href="/challenges-modern-issues.html">Modern Issues</a></li>
+                            <li><a href="/challenges-discipline.html">Discipline & Behavior</a></li>
                         </ul>
-                        
-                        <h3 data-translate="data-sharing">3. Data Sharing</h3>
-                        <p data-translate="sharing-text">We do not sell personal data. We may share anonymized data to improve AI models and only share personal data when required by law.</p>
-                        
-                        <h3 data-translate="data-security">4. Data Security</h3>
-                        <p data-translate="security-text">We implement industry-standard security measures to protect your data, including encryption and secure storage.</p>
-                        
-                        <h3 data-translate="user-rights">5. Your Rights</h3>
-                        <p data-translate="rights-text">You can request data deletion, access your data, or opt-out of data collection by contacting us.</p>
-                        
-                        <h3 data-translate="contact-privacy">6. Contact Us</h3>
-                        <p data-translate="contact-privacy-text">For privacy concerns, email us at: Eterna.eneral@gmail.com</p>
-                    </div>
-                    <button class="btn btn-secondary back-btn" onclick="showScreen('settings-screen')" data-translate="back">← Back</button>
-                </div>
-            </div>
+                    </li>
+                    <li class="dropdown">
+                        <a href="/islamic-education.html" class="dropdown-toggle">Islamic Education</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/teaching-quran-at-home.html">Teaching Quran at Home</a></li>
+                            <li><a href="/teaching-prayer-worship.html">Prayer & Worship</a></li>
+                            <li><a href="/prophet-stories.html">Prophet Stories</a></li>
+                            <li><a href="/islamic-character.html">Islamic Character Building</a></li>
+                            <li><a href="/islamic-homeschooling.html">Homeschooling Resources</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="/new-muslims.html">For New Muslims</a></li>
+                    <li><a href="/free-resources.html">Free Resources</a></li>
+                    <li><a href="/about.html">About</a></li>
+                </ul>
+                <button class="search-icon" aria-label="Search"><span>🔍</span></button>
+                <a href="/free-resources.html" class="btn btn-primary">Get Free Resources</a>
+            </nav>
 
-            <!-- Contact Us Screen -->
-            <div id="contact-screen" class="screen">
-                <div class="legal-content">
-                    <h2 data-translate="contact-us">Contact Us</h2>
-                    <div class="content-section">
-                        <p data-translate="contact-intro">We'd love to hear from you! Get in touch with any questions, suggestions, or feedback.</p>
-                        
-                        <div class="contact-info">
-                            <h3 data-translate="email-support">Email Support</h3>
-                            <p class="contact-detail">
-                                <strong>Email:</strong> <a href="mailto:Eterna.eneral@gmail.com">Eterna.eneral@gmail.com</a>
-                            </p>
-                            <p data-translate="response-time">We typically respond within 24-48 hours.</p>
-                        </div>
-                        
-                        <div class="contact-form">
-                            <h3 data-translate="send-message">Send us a Message</h3>
-                            <textarea class="text-input" id="contact-message" placeholder="Your message..." data-translate-placeholder="contact-placeholder"></textarea>
-                            <button class="btn btn-primary" onclick="sendContactMessage()" data-translate="send">Send Message</button>
-                        </div>
-                        
-                        <div class="contact-info">
-                            <h3 data-translate="report-issue">Report an Issue</h3>
-                            <p data-translate="issue-text">Found an incorrect halal classification? Please let us know so we can improve our AI model.</p>
-                        </div>
-                        
-                        <div class="contact-info">
-                            <h3 data-translate="business-inquiries">Business Inquiries</h3>
-                            <p data-translate="business-text">Interested in enterprise features or partnerships? Contact us at the email above.</p>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary back-btn" onclick="showScreen('settings-screen')" data-translate="back">← Back</button>
-                </div>
+            <div class="nav-mobile">
+                <button class="search-icon" aria-label="Search"><span>🔍</span></button>
+                <button class="hamburger" aria-label="Menu"><span>☰</span></button>
             </div>
-        </main>
-
-        <!-- Global Disclaimer - appears on all screens at bottom -->
-        <div class="disclaimer" style="margin: 0.5rem; position: relative; z-index: 50;">
-            <p data-translate="disclaimer">
-                This tool provides ingredient analysis based on Islamic dietary guidelines for informational purposes. For specific religious guidance or complex cases, please consult with a qualified Islamic scholar or halal certification authority.
-            </p>
         </div>
+    </header>
 
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="showScreen('home-screen')">
-                <div class="nav-icon">⌂</div>
-                <div class="nav-label" data-translate="nav-home">Home</div>
+    <!-- Mobile Menu -->
+    <div class="mobile-menu-overlay"></div>
+    <nav class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/" class="logo">
+                <span class="logo-icon">☪</span>
+                <span class="logo-text-bold">Halal</span><span class="logo-text-regular">Detect</span>
+            </a>
+            <button class="mobile-close" aria-label="Close menu">✕</button>
+        </div>
+        <div class="mobile-menu-content">
+            <ul>
+                <li>
+                    <button class="mobile-dropdown-toggle">By Age <span class="dropdown-arrow">▼</span></button>
+                    <div class="mobile-dropdown-content">
+                        <a href="/parenting-babies-toddlers.html">Babies & Toddlers (0-3)</a>
+                        <a href="/parenting-preschool.html">Preschool (3-5)</a>
+                        <a href="/parenting-elementary.html">Elementary (6-12)</a>
+                        <a href="/parenting-teens.html">Teens (13-18)</a>
+                    </div>
+                </li>
+                <li>
+                    <button class="mobile-dropdown-toggle">Challenges <span class="dropdown-arrow">▼</span></button>
+                    <div class="mobile-dropdown-content">
+                        <a href="/challenges-identity.html">Identity & Belonging</a>
+                        <a href="/challenges-islamophobia.html">School & Islamophobia</a>
+                        <a href="/challenges-modern-issues.html">Modern Issues</a>
+                        <a href="/challenges-discipline.html">Discipline & Behavior</a>
+                    </div>
+                </li>
+                <li>
+                    <button class="mobile-dropdown-toggle">Islamic Education <span class="dropdown-arrow">▼</span></button>
+                    <div class="mobile-dropdown-content">
+                        <a href="/teaching-quran-at-home.html">Teaching Quran at Home</a>
+                        <a href="/teaching-prayer-worship.html">Prayer & Worship</a>
+                        <a href="/prophet-stories.html">Prophet Stories</a>
+                        <a href="/islamic-character.html">Character Building</a>
+                        <a href="/islamic-homeschooling.html">Homeschooling</a>
+                    </div>
+                </li>
+                <li><a href="/new-muslims.html">For New Muslims</a></li>
+                <li><a href="/free-resources.html">Free Resources</a></li>
+                <li><a href="/about.html">About</a></li>
+                <li><a href="/contact.html">Contact</a></li>
+            </ul>
+            <div style="padding-top: var(--spacing-md);">
+                <a href="/free-resources.html" class="btn btn-primary" style="width: 100%; text-align: center;">Get Free Resources</a>
             </div>
-            <div class="nav-item" onclick="showScreen('history-screen')">
-                <div class="nav-icon">▤</div>
-                <div class="nav-label" data-translate="nav-history">History</div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Section 1: Hero -->
+        <section class="islamic-pattern" style="padding: 4rem 0; background: linear-gradient(135deg, rgba(33, 128, 137, 0.05) 0%, rgba(253, 248, 243, 1) 100%);">
+            <div class="container">
+                <div style="display: grid; grid-template-columns: 1fr; gap: var(--spacing-xl); align-items: center;">
+                    <div style="text-align: center;">
+                        <h1 style="font-size: clamp(32px, 5vw, 48px); margin-bottom: var(--spacing-md);">
+                            Raising Confident Muslim Kids in the West
+                        </h1>
+                        <p style="font-size: clamp(20px, 3vw, 28px); color: var(--primary-teal); font-weight: 500; margin-bottom: var(--spacing-md);">
+                            Faith, Identity & Family Guidance for Muslim Parents
+                        </p>
+                        <p style="font-size: var(--body-text-large); color: var(--text-secondary); max-width: 700px; margin: 0 auto var(--spacing-xl);">
+                            Navigate the unique challenges of raising Muslim children in USA, UK, Canada, and Australia. From identity struggles to Islamophobia, get practical Islamic parenting advice rooted in faith and modern understanding.
+                        </p>
+                        <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap;">
+                            <a href="/free-resources.html" class="btn btn-primary btn-large">Explore Free Resources</a>
+                            <a href="/about.html" class="btn btn-secondary btn-large">Start Here</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="nav-item" onclick="showScreen('settings-screen')">
-                <div class="nav-icon">⚙</div>
-                <div class="nav-label" data-translate="nav-settings">Settings</div>
+        </section>
+
+        <!-- Section 2: Featured Categories -->
+        <section style="background-color: white; padding: 4rem 0;">
+            <div class="container">
+                <div class="grid grid-4">
+                    <a href="/by-age.html" class="category-card">
+                        <div class="category-icon">👶</div>
+                        <h3 class="category-title">Find Advice for Your Child's Age</h3>
+                        <p class="category-description">Age-specific guidance from infants to teens</p>
+                    </a>
+                    <a href="/challenges.html" class="category-card">
+                        <div class="category-icon">💪</div>
+                        <h3 class="category-title">Navigate Modern Challenges</h3>
+                        <p class="category-description">Islamophobia, identity, peer pressure and more</p>
+                    </a>
+                    <a href="/islamic-education.html" class="category-card">
+                        <div class="category-icon">📖</div>
+                        <h3 class="category-title">Teach Faith at Home</h3>
+                        <p class="category-description">Quran, prayer, prophet stories and values</p>
+                    </a>
+                    <a href="/new-muslims.html" class="category-card">
+                        <div class="category-icon">🌟</div>
+                        <h3 class="category-title">New to Islam? Start Here</h3>
+                        <p class="category-description">Support for converts raising Muslim families</p>
+                    </a>
+                </div>
             </div>
-        </nav>
+        </section>
+
+        <!-- Section 3: Latest Articles -->
+        <section>
+            <div class="container">
+                <div class="section-header">
+                    <h2>Recent Articles</h2>
+                    <a href="/blog.html" style="color: var(--primary-teal); font-weight: 500;">See All →</a>
+                </div>
+
+                <div class="grid grid-3">
+                    <!-- Article Card 1 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--primary-teal) 0%, var(--sage-green) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Challenges</span>
+                            <h3 class="article-title">What to Do When Your Child Faces Islamophobia at School</h3>
+                            <p class="article-excerpt">Practical steps to support your child through discrimination, build resilience, and advocate effectively with teachers and administrators.</p>
+                            <div class="article-meta">
+                                <span>By Amina Khan</span>
+                                <span>•</span>
+                                <span>8 min read</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Article Card 2 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--gentle-orange) 0%, var(--primary-teal) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Islamic Education</span>
+                            <h3 class="article-title">Teaching Quran to Kids at Home: Step by Step Guide</h3>
+                            <p class="article-excerpt">From making it fun for toddlers to memorization techniques for teens, discover age-appropriate methods that actually work.</p>
+                            <div class="article-meta">
+                                <span>By Fatima Ahmed</span>
+                                <span>•</span>
+                                <span>12 min read</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Article Card 3 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--sage-green) 0%, var(--primary-teal) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Identity</span>
+                            <h3 class="article-title">When Your Child Hides Their Muslim Identity</h3>
+                            <p class="article-excerpt">Understanding why kids feel different, rebuilding pride in Islamic identity, and creating safe spaces for honest conversations.</p>
+                            <div class="article-meta">
+                                <span>By Sarah Williams</span>
+                                <span>•</span>
+                                <span>10 min read</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Article Card 4 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--deep-teal) 0%, var(--gentle-orange) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Prophet Stories</span>
+                            <h3 class="article-title">Prophet Muhammad (ﷺ) Story for Kids</h3>
+                            <p class="article-excerpt">An age-appropriate telling of the life of our beloved Prophet, with discussion questions and activities for the whole family.</p>
+                            <div class="article-meta">
+                                <span>By Zainab Malik</span>
+                                <span>•</span>
+                                <span>15 min read</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Article Card 5 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--gentle-orange) 0%, var(--sage-green) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Parenting Guide</span>
+                            <h3 class="article-title">Raising Confident Muslim Kids in America: Complete Guide</h3>
+                            <p class="article-excerpt">Everything you need to know about building Islamic identity, navigating public schools, and maintaining cultural connections.</p>
+                            <div class="article-meta">
+                                <span>By Omar Hassan</span>
+                                <span>•</span>
+                                <span>20 min read</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Article Card 6 -->
+                    <article class="article-card">
+                        <div style="width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--primary-teal) 0%, var(--deep-teal) 100%);"></div>
+                        <div class="article-content">
+                            <span class="article-category">Prayer & Worship</span>
+                            <h3 class="article-title">Making Salah Fun for Young Children</h3>
+                            <p class="article-excerpt">Creative ways to introduce prayer to preschoolers without pressure, building positive associations that last a lifetime.</p>
+                            <div class="article-meta">
+                                <span>By Aisha Rahman</span>
+                                <span>•</span>
+                                <span>7 min read</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Prophet Stories Spotlight -->
+        <section style="background: linear-gradient(135deg, rgba(33, 128, 137, 0.08) 0%, rgba(139, 168, 136, 0.08) 100%);">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Beloved Prophet Stories for Kids</h2>
+                    <p>Teach timeless lessons through stories of courage, patience, and faith</p>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary-teal) 0%, var(--deep-teal) 100%); border-radius: 50%; margin: 0 auto var(--spacing-md); display: flex; align-items: center; justify-content: center; font-size: 48px;">☪️</div>
+                        <h3>Prophet Muhammad ﷺ</h3>
+                        <p style="color: var(--text-secondary); font-size: var(--small-text); margin-bottom: var(--spacing-sm);">Ages 6+ • The Final Messenger</p>
+                        <p style="color: var(--primary-teal); font-weight: 500;">Key Lesson: Mercy & Compassion</p>
+                    </div>
+
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--gentle-orange) 0%, var(--primary-teal) 100%); border-radius: 50%; margin: 0 auto var(--spacing-md); display: flex; align-items: center; justify-content: center; font-size: 48px;">🌟</div>
+                        <h3>Prophet Yusuf عليه السلام</h3>
+                        <p style="color: var(--text-secondary); font-size: var(--small-text); margin-bottom: var(--spacing-sm);">Ages 7+ • The Forgiving Brother</p>
+                        <p style="color: var(--primary-teal); font-weight: 500;">Key Lesson: Patience & Forgiveness</p>
+                    </div>
+
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--sage-green) 0%, var(--primary-teal) 100%); border-radius: 50%; margin: 0 auto var(--spacing-md); display: flex; align-items: center; justify-content: center; font-size: 48px;">⚡</div>
+                        <h3>Prophet Musa عليه السلام</h3>
+                        <p style="color: var(--text-secondary); font-size: var(--small-text); margin-bottom: var(--spacing-sm);">Ages 6+ • The Brave Leader</p>
+                        <p style="color: var(--primary-teal); font-weight: 500;">Key Lesson: Courage & Trust in Allah</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--spacing-xl);">
+                    <a href="/prophet-stories.html" class="btn btn-primary btn-large">Explore All 25 Prophet Stories</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Free Resources -->
+        <section style="background-color: white;">
+            <div class="container">
+                <div style="display: grid; grid-template-columns: 1fr; gap: var(--spacing-xl); align-items: center;">
+                    <div>
+                        <h2 style="margin-bottom: var(--spacing-md);">Free Islamic Parenting Resources</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+                            Download printables, guides, and worksheets to strengthen your family's Islamic journey.
+                        </p>
+                        <ul style="list-style: none; margin-bottom: var(--spacing-lg);">
+                            <li style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--sage-green); font-size: 20px;">✓</span>
+                                <span>Daily Salah Tracker for Kids</span>
+                            </li>
+                            <li style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--sage-green); font-size: 20px;">✓</span>
+                                <span>30-Day Ramadan Calendar</span>
+                            </li>
+                            <li style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--sage-green); font-size: 20px;">✓</span>
+                                <span>Dua Cards for Lunchboxes</span>
+                            </li>
+                            <li style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--sage-green); font-size: 20px;">✓</span>
+                                <span>New Muslim Parent Starter Guide</span>
+                            </li>
+                            <li style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--sage-green); font-size: 20px;">✓</span>
+                                <span>Islamic Bedtime Stories Collection</span>
+                            </li>
+                        </ul>
+                        <a href="/free-resources.html" class="btn btn-primary">Browse All Free Resources</a>
+                    </div>
+
+                    <div style="background: var(--bg-teal-light); padding: var(--spacing-xl); border-radius: var(--radius-lg); border: 2px solid var(--primary-teal);">
+                        <h3 style="margin-bottom: var(--spacing-md);">Get Weekly Parenting Tips</h3>
+                        <form class="newsletter-form" style="flex-direction: column;">
+                            <input type="email" placeholder="Your email address" required aria-label="Email address">
+                            <button type="submit" class="btn btn-primary">Join Our Community</button>
+                        </form>
+                        <p style="font-size: var(--small-text); color: var(--text-secondary); margin-top: var(--spacing-sm);">
+                            We respect your privacy. Unsubscribe anytime.<br>
+                            <strong>Download "10 Essential Duas Every Muslim Parent Should Teach Their Kids" (Free PDF)</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: Community Voices -->
+        <section style="background: linear-gradient(135deg, rgba(230, 129, 97, 0.05) 0%, rgba(253, 248, 243, 1) 100%);">
+            <div class="container">
+                <div class="section-header">
+                    <h2>What Parents Are Saying</h2>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="card">
+                        <p style="font-size: var(--body-text-large); line-height: var(--line-height-relaxed); margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                            "This site helped me explain hijab to my 7-year-old daughter with confidence and pride."
+                        </p>
+                        <p style="font-weight: 500; color: var(--text-primary);">— Sarah, UK</p>
+                    </div>
+
+                    <div class="card">
+                        <p style="font-size: var(--body-text-large); line-height: var(--line-height-relaxed); margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                            "As a convert, I felt lost raising my kids Muslim. These resources gave me the guidance I desperately needed."
+                        </p>
+                        <p style="font-weight: 500; color: var(--text-primary);">— Jennifer, USA</p>
+                    </div>
+
+                    <div class="card">
+                        <p style="font-size: var(--body-text-large); line-height: var(--line-height-relaxed); margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                            "The prophet stories are beautifully written. My kids ask for them every night now!"
+                        </p>
+                        <p style="font-weight: 500; color: var(--text-primary);">— Ahmed, Canada</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: Social Community -->
+        <section style="background-color: white;">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Join Our Community</h2>
+                    <p>Follow @HalalDetect for Daily Tips</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-xl);">
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--primary-teal) 0%, var(--sage-green) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">Instagram Post 1</div>
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--gentle-orange) 0%, var(--primary-teal) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">Instagram Post 2</div>
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--sage-green) 0%, var(--deep-teal) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">Instagram Post 3</div>
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--deep-teal) 0%, var(--gentle-orange) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">Pinterest Pin 1</div>
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--primary-teal) 0%, var(--gentle-orange) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">Pinterest Pin 2</div>
+                    <div style="aspect-ratio: 1; background: linear-gradient(135deg, var(--sage-green) 0%, var(--primary-teal) 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--small-text);">TikTok Video</div>
+                </div>
+
+                <div style="text-align: center;">
+                    <div class="social-links" style="justify-content: center; font-size: 24px;">
+                        <a href="https://instagram.com/halaldetect" target="_blank" rel="noopener" aria-label="Instagram" style="width: 50px; height: 50px; font-size: 24px;">📷</a>
+                        <a href="https://pinterest.com/halaldetect" target="_blank" rel="noopener" aria-label="Pinterest" style="width: 50px; height: 50px; font-size: 24px;">📌</a>
+                        <a href="https://tiktok.com/@halaldetect" target="_blank" rel="noopener" aria-label="TikTok" style="width: 50px; height: 50px; font-size: 24px;">🎵</a>
+                        <a href="https://facebook.com/halaldetect" target="_blank" rel="noopener" aria-label="Facebook" style="width: 50px; height: 50px; font-size: 24px;">👍</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-newsletter">
+                <h4>Join Over 10,000 Muslim Parents Getting Weekly Tips</h4>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="Enter your email" required aria-label="Email address">
+                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+                <p style="font-size: var(--small-text); margin-top: 0.5rem; opacity: 0.8;">We respect your privacy. Unsubscribe anytime.</p>
+            </div>
+
+            <div class="footer-content">
+                <div class="footer-column">
+                    <div class="footer-brand">
+                        <a href="/" class="logo" style="color: white; margin-bottom: var(--spacing-sm);">
+                            <span class="logo-icon">☪</span>
+                            <span class="logo-text-bold">Halal</span><span class="logo-text-regular">Detect</span>
+                        </a>
+                    </div>
+                    <p class="footer-tagline">Helping Muslim parents raise confident, faithful children in the West.</p>
+                    <div class="social-links">
+                        <a href="https://instagram.com/halaldetect" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
+                        <a href="https://pinterest.com/halaldetect" target="_blank" rel="noopener" aria-label="Pinterest">📌</a>
+                        <a href="https://tiktok.com/@halaldetect" target="_blank" rel="noopener" aria-label="TikTok">🎵</a>
+                        <a href="https://facebook.com/halaldetect" target="_blank" rel="noopener" aria-label="Facebook">👍</a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/by-age.html">By Age</a></li>
+                        <li><a href="/challenges.html">Challenges</a></li>
+                        <li><a href="/islamic-education.html">Islamic Education</a></li>
+                        <li><a href="/prophet-stories.html">Prophet Stories</a></li>
+                        <li><a href="/new-muslims.html">For New Muslims</a></li>
+                        <li><a href="/free-resources.html">Free Resources</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="/about.html">About Us</a></li>
+                        <li><a href="/contact.html">Contact</a></li>
+                        <li><a href="/faq.html">FAQ</a></li>
+                        <li><a href="/advertise.html">Advertise With Us</a></li>
+                        <li><a href="/write-for-us.html">Write For Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="/privacy-policy.html">Privacy Policy</a></li>
+                        <li><a href="/terms.html">Terms of Service</a></li>
+                        <li><a href="/affiliate-disclosure.html">Affiliate Disclosure</a></li>
+                        <li><a href="/cookie-policy.html">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2025 HalalDetect. All rights reserved.</p>
+                <p style="margin-top: 0.5rem;">Made with love for the Ummah ❤️</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Search Modal -->
+    <div id="searchModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 3000; align-items: flex-start; justify-content: center; padding-top: 10vh;">
+        <div style="background: white; border-radius: var(--radius-lg); padding: var(--spacing-lg); max-width: 600px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h3 style="margin: 0;">Search</h3>
+                <button class="search-close" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+            </div>
+            <form id="searchForm">
+                <input type="text" id="searchInput" placeholder="Search articles, topics, and resources..." style="width: 100%; padding: 0.75rem; font-size: var(--body-text); border: 2px solid var(--warm-gray); border-radius: var(--radius-sm);">
+                <button type="submit" class="btn btn-primary" style="margin-top: var(--spacing-sm); width: 100%;">Search</button>
+            </form>
+        </div>
     </div>
 
-    <script>
-        // Global variables
-        let currentLanguage = 'en';
-        let dailyScans = 0;
-        let maxFreeScans = 5;
-        let isPremium = false;
-        let scanHistory = [];
-        let deferredPrompt = null;
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" style="display: none; position: fixed; bottom: 2rem; right: 2rem; width: 50px; height: 50px; border-radius: 50%; background-color: var(--deep-teal); color: white; border: none; font-size: 20px; cursor: pointer; box-shadow: var(--shadow-lg); align-items: center; justify-content: center; transition: all var(--transition-normal); z-index: 999;" aria-label="Scroll to top">↑</button>
 
-        // Translation data
-        const translations = {
-            en: {
-                'app-name': 'HalalDetect',
-                'app-title': 'HalalDetect',
-                'scans-remaining': '5/5 free',
-                'install-tip': 'Add this to your home screen for quick access!',
-                'install-now': 'Install Now',
-                'maybe-later': 'Maybe Later',
-                'upgrade-premium': 'For Unlimited Scans',
-                'unlimited-scans': 'Unlimited scans',
-                'business-tools': 'Business tools',
-                'priority-support': 'Priority support',
-                'get-premium': 'Get Premium - $4.99/month',
-                'continue-free': 'Continue Free',
-                'scan-ingredients': '<span class="camera-icon">📷</span>Scan Ingredients',
-                'manual-input': 'Manual Input',
-                'disclaimer': 'This tool provides ingredient analysis based on Islamic dietary guidelines for informational purposes. For specific religious guidance or complex cases, please consult with a qualified Islamic scholar or halal certification authority.',
-                'scan-title': 'Scan Ingredient List',
-                'camera-instruction': 'Tap to scan ingredient list, barcode, or upload image',
-                'upload-instruction': 'Drop ingredient list/barcode image here or click to upload',
-                'manual-title': 'Enter Ingredients Manually',
-                'manual-placeholder': 'Enter one ingredient (e.g. gelatin, lecithin, vanilla)...',
-                'analyze-btn': 'Analyze Ingredients',
-                'share-results': 'Share Results',
-                'scan-another': 'Scan Another',
-                'analyzing': 'Analyzing ingredients...',
-                'scan-history': 'Scan History',
-                'settings-title': 'Settings',
-                'notifications': 'Notifications',
-                'business-features': 'Business Features',
-                'community-sharing': 'Community Sharing',
-                'nav-home': 'Home',
-                'nav-history': 'History',
-                'nav-settings': 'Settings',
-                'legal-section': 'Legal',
-                'about-us': 'About Us',
-                'terms-service': 'Terms of Service',
-                'privacy-policy': 'Privacy Policy',
-                'contact-us': 'Contact Us',
-                'back': '← Back',
-                'about-intro': 'HalalDetect is an AI-powered halal ingredient checker designed to help Muslims make informed dietary choices with confidence.',
-                'our-mission': 'Our Mission',
-                'mission-text': 'To provide accurate, reliable halal ingredient verification using advanced artificial intelligence, respecting all schools of Islamic jurisprudence.',
-                'features': 'Key Features',
-                'feature-ai': 'AI-powered ingredient analysis',
-                'feature-multilingual': 'Bilingual support (Arabic & English)',
-                'feature-schools': 'Consideration of different Islamic schools',
-                'feature-offline': 'Offline capability',
-                'disclaimer-title': 'Important Disclaimer',
-                'disclaimer-full': 'This tool provides ingredient analysis for informational purposes only. For definitive rulings on complex cases or specific religious guidance, please consult with qualified Islamic scholars or halal certification authorities.',
-                'effective-date': 'Effective Date:',
-                'current-date': 'January 2025',
-                'acceptance': '1. Acceptance of Terms',
-                'acceptance-text': 'By using HalalDetect, you agree to these Terms of Service and acknowledge that the app provides informational guidance only.',
-                'service-description': '2. Service Description',
-                'service-text': 'HalalDetect analyzes ingredients using AI technology to provide halal/haram classifications based on Islamic dietary guidelines.',
-                'user-responsibilities': '3. User Responsibilities',
-                'responsibilities-text': 'Users are responsible for verifying results with qualified Islamic authorities for important dietary decisions.',
-                'limitations': '4. Limitations',
-                'limitations-text': 'Results are for informational purposes only. HalalDetect is not liable for dietary decisions based on app results.',
-                'contact-terms': '5. Contact',
-                'contact-terms-text': 'For questions about these terms, contact us at: Eterna.eneral@gmail.com',
-                'info-collection': '1. Information We Collect',
-                'collection-text': 'We collect uploaded images, ingredient lists, and usage statistics to improve our service. All data is processed locally when possible.',
-                'info-use': '2. How We Use Your Information',
-                'use-analysis': 'Ingredient analysis and halal verification',
-                'use-improvement': 'Service improvement and feature development',
-                'use-support': 'Customer support and technical assistance',
-                'data-sharing': '3. Data Sharing',
-                'sharing-text': 'We do not sell personal data. We may share anonymized data to improve AI models and only share personal data when required by law.',
-                'data-security': '4. Data Security',
-                'security-text': 'We implement industry-standard security measures to protect your data, including encryption and secure storage.',
-                'user-rights': '5. Your Rights',
-                'rights-text': 'You can request data deletion, access your data, or opt-out of data collection by contacting us.',
-                'contact-privacy': '6. Contact Us',
-                'contact-privacy-text': 'For privacy concerns, email us at: Eterna.eneral@gmail.com',
-                'contact-intro': 'We\'d love to hear from you! Get in touch with any questions, suggestions, or feedback.',
-                'email-support': 'Email Support',
-                'response-time': 'We typically respond within 24-48 hours.',
-                'send-message': 'Send us a Message',
-                'contact-placeholder': 'Your message...',
-                'send': 'Send Message',
-                'report-issue': 'Report an Issue',
-                'issue-text': 'Found an incorrect halal classification? Please let us know so we can improve our AI model.',
-                'business-inquiries': 'Business Inquiries',
-                'business-text': 'Interested in enterprise features or partnerships? Contact us at the email above.'
-            },
-            ar: {
-                'app-name': 'كاشف الحلال',
-                'app-title': 'كاشف الحلال',
-                'scans-remaining': '5/5 مجاني',
-                'install-tip': 'أضف هذا التطبيق إلى شاشتك الرئيسية للوصول السريع!',
-                'install-now': '📲 تثبيت الآن',
-                'maybe-later': 'ربما لاحقاً',
-                'upgrade-premium': 'للفحوصات اللا محدودة',
-                'unlimited-scans': 'فحوصات غير محدودة',
-                'business-tools': 'أدوات الأعمال',
-                'priority-support': 'دعم مميز',
-                'get-premium': 'احصل على المميز - 4.99$ شهرياً',
-                'continue-free': 'متابعة مجاناً',
-                'scan-ingredients': '<span class="camera-icon">📷</span>فحص المكونات',
-                'manual-input': '✍️ إدخال يدوي',
-                'disclaimer': 'توفر هذه الأداة تحليل المكونات بناءً على الإرشادات الغذائية الإسلامية لأغراض إعلامية. للحصول على إرشادات دينية محددة أو حالات معقدة، يرجى استشارة عالم إسلامي مؤهل أو سلطة اعتماد الحلال.',
-                'scan-title': 'فحص قائمة المكونات',
-                'camera-instruction': 'اضغط لمسح قائمة المكونات أو الباركود أو رفع صورة',
-                'upload-instruction': 'اسحب صورة المكونات/الباركود هنا أو اضغط للرفع',
-                'manual-title': 'أدخل المكونات يدوياً',
-                'manual-placeholder': 'أدخل مكون واحد (مثل جيلاتين، ليسيثين)...',
-                'analyze-btn': 'تحليل المكونات',
-                'share-results': '📱 مشاركة النتائج',
-                'scan-another': '🔄 فحص آخر',
-                'analyzing': 'جاري تحليل المكونات...',
-                'scan-history': 'سجل الفحوصات',
-                'settings-title': 'الإعدادات',
-                'notifications': 'الإشعارات',
-                'business-features': 'ميزات الأعمال',
-                'community-sharing': 'مشاركة المجتمع',
-                'nav-home': 'الرئيسية',
-                'nav-history': 'السجل',
-                'nav-settings': 'الإعدادات',
-                'legal-section': 'قانوني',
-                'about-us': 'من نحن',
-                'terms-service': 'شروط الخدمة',
-                'privacy-policy': 'سياسة الخصوصية',
-                'contact-us': 'اتصل بنا',
-                'back': '← رجوع',
-                'about-intro': 'كاشف الحلال هو تطبيق ذكي يساعد المسلمين على اتخاذ قرارات غذائية مدروسة بثقة.',
-                'our-mission': 'رسالتنا',
-                'mission-text': 'توفير تحقق دقيق وموثوق للمكونات الحلال باستخدام الذكاء الاصطناعي المتقدم، مع احترام جميع المذاهب الإسلامية.',
-                'features': 'الميزات الرئيسية',
-                'feature-ai': 'تحليل المكونات بالذكاء الاصطناعي',
-                'feature-multilingual': 'دعم ثنائي اللغة (العربية والإنجليزية)',
-                'feature-schools': 'مراعاة المذاهب الإسلامية المختلفة',
-                'feature-offline': 'إمكانية العمل دون اتصال',
-                'disclaimer-title': 'تنويه مهم',
-                'disclaimer-full': 'هذا التطبيق يوفر تحليل المكونات لأغراض إعلامية فقط. للحصول على أحكام نهائية في الحالات المعقدة أو للإرشاد الديني المحدد، يرجى استشارة علماء إسلاميين مؤهلين أو سلطات الشهادات الحلال.',
-                'effective-date': 'تاريخ السريان:',
-                'current-date': 'يناير 2025',
-                'acceptance': '1. قبول الشروط',
-                'acceptance-text': 'باستخدام كاشف الحلال، توافق على شروط الخدمة هذه وتقر بأن التطبيق يوفر إرشادات إعلامية فقط.',
-                'service-description': '2. وصف الخدمة',
-                'service-text': 'كاشف الحلال يحلل المكونات باستخدام تقنية الذكاء الاصطناعي لتوفير تصنيفات حلال/حرام بناءً على الإرشادات الغذائية الإسلامية.',
-                'user-responsibilities': '3. مسؤوليات المستخدم',
-                'responsibilities-text': 'المستخدمون مسؤولون عن التحقق من النتائج مع السلطات الإسلامية المؤهلة للقرارات الغذائية المهمة.',
-                'limitations': '4. القيود',
-                'limitations-text': 'النتائج لأغراض إعلامية فقط. كاشف الحلال غير مسؤول عن القرارات الغذائية المبنية على نتائج التطبيق.',
-                'contact-terms': '5. التواصل',
-                'contact-terms-text': 'لأسئلة حول هذه الشروط، اتصل بنا على: Eterna.eneral@gmail.com',
-                'info-collection': '1. المعلومات التي نجمعها',
-                'collection-text': 'نجمع الصور المرفوعة وقوائم المكونات وإحصائيات الاستخدام لتحسين خدمتنا. جميع البيانات تُعالج محلياً عند الإمكان.',
-                'info-use': '2. كيف نستخدم معلوماتك',
-                'use-analysis': 'تحليل المكونات والتحقق من الحلال',
-                'use-improvement': 'تحسين الخدمة وتطوير الميزات',
-                'use-support': 'دعم العملاء والمساعدة التقنية',
-                'data-sharing': '3. مشاركة البيانات',
-                'sharing-text': 'لا نبيع البيانات الشخصية. قد نشارك البيانات المجهولة لتحسين نماذج الذكاء الاصطناعي ونشارك البيانات الشخصية فقط عند الطلب قانونياً.',
-                'data-security': '4. أمان البيانات',
-                'security-text': 'ننفذ إجراءات أمان معيارية في الصناعة لحماية بياناتك، بما في ذلك التشفير والتخزين الآمن.',
-                'user-rights': '5. حقوقك',
-                'rights-text': 'يمكنك طلب حذف البيانات أو الوصول إلى بياناتك أو إلغاء الاشتراك في جمع البيانات بالتواصل معنا.',
-                'contact-privacy': '6. اتصل بنا',
-                'contact-privacy-text': 'لمخاوف الخصوصية، راسلنا على: Eterna.eneral@gmail.com',
-                'contact-intro': 'نود سماع آرائكم! تواصلوا معنا لأي أسئلة أو اقتراحات أو ملاحظات.',
-                'email-support': 'دعم البريد الإلكتروني',
-                'response-time': 'نرد عادة خلال 24-48 ساعة.',
-                'send-message': 'أرسل لنا رسالة',
-                'contact-placeholder': 'رسالتك...',
-                'send': 'إرسال الرسالة',
-                'report-issue': 'الإبلاغ عن مشكلة',
-                'issue-text': 'وجدت تصنيف حلال خاطئ؟ أخبرنا حتى نتمكن من تحسين نموذج الذكاء الاصطناعي.',
-                'business-inquiries': 'استفسارات الأعمال',
-                'business-text': 'مهتم بميزات المؤسسات أو الشراكات؟ اتصل بنا على البريد الإلكتروني أعلاه.'
-            }
-        };
-
-        // Ingredient database for local caching
-        const ingredientDatabase = {
-            // Common halal ingredients
-            'water': { status: 'halal', reason_en: 'Water is naturally permissible', reason_ar: 'الماء طبيعي ومسموح' },
-            'salt': { status: 'halal', reason_en: 'Salt is naturally permissible', reason_ar: 'الملح طبيعي ومسموح' },
-            'sugar': { status: 'halal', reason_en: 'Sugar from plants is permissible', reason_ar: 'السكر من النباتات مسموح' },
-            'flour': { status: 'halal', reason_en: 'Wheat flour is plant-based and permissible', reason_ar: 'دقيق القمح نباتي ومسموح' },
-            'rice': { status: 'halal', reason_en: 'Rice is naturally permissible', reason_ar: 'الأرز طبيعي ومسموح' },
-            'olive oil': { status: 'halal', reason_en: 'Plant-based oil is permissible', reason_ar: 'الزيت النباتي مسموح' },
-            'vegetable oil': { status: 'halal', reason_en: 'Plant-based oil is permissible', reason_ar: 'الزيت النباتي مسموح' },
-            
-            // Common haram ingredients  
-            'pork': { status: 'haram', reason_en: 'Pork is explicitly forbidden in Islam', reason_ar: 'لحم الخنزير محرم صراحة في الإسلام' },
-            'bacon': { status: 'haram', reason_en: 'Bacon is pork product, forbidden in Islam', reason_ar: 'البيكون من منتجات الخنزير المحرمة' },
-            'alcohol': { status: 'haram', reason_en: 'Alcohol is forbidden in Islam', reason_ar: 'الكحول محرم في الإسلام' },
-            'wine': { status: 'haram', reason_en: 'Wine contains alcohol, forbidden in Islam', reason_ar: 'النبيذ يحتوي على كحول محرم' },
-            'beer': { status: 'haram', reason_en: 'Beer contains alcohol, forbidden in Islam', reason_ar: 'البيرة تحتوي على كحول محرم' },
-            'lard': { status: 'haram', reason_en: 'Lard is pig fat, forbidden in Islam', reason_ar: 'الشحم هو دهن خنزير محرم' },
-            
-            // Suspicious ingredients
-            'gelatin': { status: 'suspicious', reason_en: 'Gelatin source unknown - could be from pork or beef', reason_ar: 'مصدر الجيلاتين غير معروف - قد يكون من الخنزير أو البقر' },
-            'glycerin': { status: 'suspicious', reason_en: 'Glycerin source unknown - could be animal or plant-based', reason_ar: 'مصدر الجليسرين غير معروف - قد يكون حيواني أو نباتي' },
-            'mono and diglycerides': { status: 'suspicious', reason_en: 'Source unknown - could be from animal fat', reason_ar: 'المصدر غير معروف - قد يكون من الدهن الحيواني' },
-            'lecithin': { status: 'suspicious', reason_en: 'Usually soy-based but verify source', reason_ar: 'عادة من الصويا ولكن تحقق من المصدر' },
-            'vanilla extract': { status: 'suspicious', reason_en: 'May contain alcohol - check if alcohol-free', reason_ar: 'قد يحتوي على كحول - تحقق إن كان خالي من الكحول' }
-        };
-
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
-
-        function initializeApp() {
-            loadUserData();
-            updateScanCounter();
-            loadHistory();
-            setupPWA();
-            translatePage();
-        }
-
-        function loadUserData() {
-            const userData = JSON.parse(localStorage.getItem('halaldetect-user') || '{}');
-            dailyScans = userData.dailyScans || 0;
-            isPremium = userData.isPremium || false;
-            currentLanguage = userData.language || 'en';
-            
-            // Reset daily scans if new day
-            const lastScanDate = userData.lastScanDate || new Date().toDateString();
-            if (lastScanDate !== new Date().toDateString()) {
-                dailyScans = 0;
-            }
-            
-            // Update language toggle
-            document.getElementById('lang-text').textContent = currentLanguage === 'en' ? 'العربية' : 'English';
-            document.documentElement.setAttribute('dir', currentLanguage === 'ar' ? 'rtl' : 'ltr');
-            document.documentElement.setAttribute('lang', currentLanguage);
-            
-            // Hide premium banner if user is premium
-            if (isPremium) {
-                document.getElementById('premium-banner').classList.add('hidden');
-            }
-        }
-
-        function saveUserData() {
-            const userData = {
-                dailyScans: dailyScans,
-                isPremium: isPremium,
-                language: currentLanguage,
-                lastScanDate: new Date().toDateString()
-            };
-            localStorage.setItem('halaldetect-user', JSON.stringify(userData));
-        }
-
-        function updateScanCounter() {
-            const counter = document.getElementById('scan-counter-badge');
-            const remaining = Math.max(0, maxFreeScans - dailyScans);
-            const text = isPremium ? 
-                (currentLanguage === 'ar' ? 'مميز' : 'Premium') :
-                (currentLanguage === 'ar' ? `${remaining}/5` : `${remaining}/5 free`);
-            counter.querySelector('[data-translate="scans-remaining"]').textContent = text;
-        }
-
-        function canScan() {
-            return isPremium || dailyScans < maxFreeScans;
-        }
-
-        function translatePage() {
-            document.querySelectorAll('[data-translate]').forEach(element => {
-                const key = element.getAttribute('data-translate');
-                if (translations[currentLanguage][key]) {
-                    if (key === 'scan-ingredients') {
-                        element.innerHTML = translations[currentLanguage][key];
-                    } else {
-                        element.textContent = translations[currentLanguage][key];
-                    }
-                }
-            });
-            
-            document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
-                const key = element.getAttribute('data-translate-placeholder');
-                if (translations[currentLanguage][key]) {
-                    element.setAttribute('placeholder', translations[currentLanguage][key]);
-                }
-            });
-        }
-
-        function toggleLanguage() {
-            currentLanguage = currentLanguage === 'en' ? 'ar' : 'en';
-            document.getElementById('lang-text').textContent = currentLanguage === 'en' ? 'العربية' : 'English';
-            document.documentElement.setAttribute('dir', currentLanguage === 'ar' ? 'rtl' : 'ltr');
-            document.documentElement.setAttribute('lang', currentLanguage);
-            translatePage();
-            updateScanCounter();
-            saveUserData();
-        }
-
-        function showScreen(screenId) {
-            // Hide all screens
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            
-            // Show selected screen
-            document.getElementById(screenId).classList.add('active');
-            
-            // Update nav active state
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Set active nav item based on screen
-            if (screenId === 'home-screen') {
-                document.querySelector('.nav-item:nth-child(1)').classList.add('active');
-            } else if (screenId === 'history-screen') {
-                document.querySelector('.nav-item:nth-child(2)').classList.add('active');
-                loadHistory();
-            } else if (screenId === 'settings-screen') {
-                document.querySelector('.nav-item:nth-child(3)').classList.add('active');
-            }
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (!canScan()) {
-                    showUpgradePrompt();
-                    return;
-                }
-                analyzeImage(file);
-            }
-        }
-
-        function handleDrop(event) {
-            event.preventDefault();
-            event.target.classList.remove('dragover');
-            const file = event.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                if (!canScan()) {
-                    showUpgradePrompt();
-                    return;
-                }
-                analyzeImage(file);
-            }
-        }
-
-        function handleDragOver(event) {
-            event.preventDefault();
-            event.target.classList.add('dragover');
-        }
-
-        function handleDragLeave(event) {
-            event.target.classList.remove('dragover');
-        }
-
-        function analyzeManualIngredients() {
-            const ingredientsText = document.getElementById('manual-ingredients').value.trim();
-            if (!ingredientsText) {
-                showError(currentLanguage === 'ar' ? 'الرجاء إدخال المكون' : 'Please enter an ingredient');
-                return;
-            }
-            
-            // Check for comma or multiple words (indicating multiple ingredients)
-            if (ingredientsText.includes(',') || ingredientsText.split(' ').length > 3) {
-                showError(currentLanguage === 'ar' ? 
-                    'يرجى إدخال مكون واحد فقط. للمكونات المتعددة، استخدم مسح الصورة أو احصل على الإصدار المميز' : 
-                    'Please enter only one ingredient. For multiple ingredients, use image scan or upgrade to premium');
-                return;
-            }
-            
-            if (!canScan()) {
-                showUpgradePrompt();
-                return;
-            }
-            
-            // Process single ingredient
-            const ingredients = [ingredientsText];
-            analyzeIngredients(ingredients);
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (!canScan()) {
-                    showUpgradePrompt();
-                    return;
-                }
-                analyzeImage(file);
-            }
-        }
-
-        async function analyzeImage(file) {
-            showScreen('loading-screen');
-            
-            try {
-                // Validate file size (max 20MB for OpenAI API)
-                const maxSize = 20 * 1024 * 1024; // 20MB in bytes
-                if (file.size > maxSize) {
-                    throw new Error(currentLanguage === 'ar' ? 
-                        'حجم الصورة كبير جداً. يرجى استخدام صورة أصغر من 20 ميجابايت' : 
-                        'Image file is too large. Please use an image smaller than 20MB');
-                }
-                
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    throw new Error(currentLanguage === 'ar' ? 
-                        'نوع الملف غير مدعوم. يرجى استخدام ملف صورة' : 
-                        'Unsupported file type. Please use an image file');
-                }
-                
-                // Convert image to base64
-                const base64 = await fileToBase64(file);
-                
-                // Extract ingredients using OpenAI Vision API
-                const ingredients = await extractIngredientsFromImage(base64, file.type);
-                
-                if (ingredients && ingredients.length > 0) {
-                    // Update scan count for successful camera scan
-                    dailyScans++;
-                    updateScanCounter();
-                    saveUserData();
-                    
-                    await analyzeIngredients(ingredients);
-                } else {
-                    showError(currentLanguage === 'ar' ? 
-                        'لم يتم العثور على مكونات في الصورة' : 
-                        'No ingredients found in image');
-                    showScreen('camera-screen');
-                }
-            } catch (error) {
-                console.error('Error analyzing image:', error);
-                
-                let errorMessage = 'Error analyzing image';
-                if (currentLanguage === 'ar') {
-                    errorMessage = 'خطأ في تحليل الصورة';
-                }
-                
-                // Provide more specific error messages
-                if (error.message.includes('Barcode detected')) {
-                    errorMessage = currentLanguage === 'ar' ? 
-                        'تم اكتشاف باركود. يرجى مسح قائمة المكونات على العبوة أو إدخال المكونات يدوياً' : 
-                        error.message;
-                } else if (error.message.includes('No ingredients detected')) {
-                    errorMessage = currentLanguage === 'ar' ? 
-                        'لم يتم اكتشاف مكونات في الصورة. يرجى التأكد من وضوح قائمة المكونات' : 
-                        error.message;
-                } else if (error.message.includes('No ingredients could be extracted')) {
-                    errorMessage = currentLanguage === 'ar' ? 
-                        'لم يتم استخراج مكونات من الصورة. يرجى التأكد من وضوح قائمة المكونات' : 
-                        error.message;
-                } else if (error.message.includes('OpenAI API Error')) {
-                    errorMessage = currentLanguage === 'ar' ? 
-                        'خطأ في الاتصال بخدمة التحليل. يرجى المحاولة مرة أخرى' : 
-                        'Connection error. Please try again.';
-                }
-                
-                showError(errorMessage);
-                showScreen('camera-screen');
-            }
-        }
-
-        async function extractIngredientsFromImage(base64Image, fileType = 'image/jpeg') {
-            // For development: Replace with your API key
-            // For production: This will be replaced during Netlify build process
-            const OPENAI_API_KEY = window.HALALDETECT_CONFIG?.apiKey || 'YOUR_OPENAI_API_KEY_HERE';
-            
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [{
-                        role: 'user',
-                        content: [
-                            {
-                                type: 'text',
-                                text: `Analyze this image to extract ingredients for halal analysis.
-
-CRITICAL: This image may show SUPPLEMENT FACTS, NUTRITION FACTS, or INGREDIENT LISTS. Look for ANY text that lists components/ingredients.
-
-This image may contain:
-1. SUPPLEMENT FACTS - Extract supplement names like "Fish Oil", "EPA", "DHA", "Gelatin", etc.
-2. INGREDIENT LIST - Extract all listed ingredients  
-3. NUTRITION FACTS - Look for ingredient information in fine print
-4. BARCODE ONLY - If you only see a barcode, respond with "INGREDIENTS: BARCODE_DETECTED"
-
-IMPORTANT: Your response must start with "INGREDIENTS:" followed by a comma-separated list ONLY.
-
-Instructions:
-- Read ALL text carefully, including supplement facts, nutrition facts, ingredient lists
-- Extract supplement/ingredient names like: Fish Oil, EPA, DHA, Gelatin, Natural Flavors, etc.
-- Include ANY components that could affect halal status
-- Read text in ANY language (English, Arabic, Spanish, French, Chinese, etc.)
-- Ignore amounts, percentages, daily values - just extract the names
-- If you cannot find ANY ingredients/supplements, respond with: "INGREDIENTS: NO_INGREDIENTS_DETECTED"
-
-Examples:
-- Supplement Facts → "INGREDIENTS: Fish Oil, EPA, DHA, Gelatin, Natural Flavors"
-- Food Label → "INGREDIENTS: Wheat Flour, Sugar, Palm Oil, Salt"
-
-Format: INGREDIENTS: [list of ingredients/supplements separated by commas]`
-                            },
-                            {
-                                type: 'image_url',
-                                image_url: {
-                                    url: `data:${fileType};base64,${base64Image}`,
-                                    detail: "high"
-                                }
-                            }
-                        ]
-                    }],
-                    max_tokens: 500
-                })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('OpenAI API Error:', response.status, errorText);
-                throw new Error(`OpenAI API Error: ${response.status} - ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log('🔍 OpenAI API Full Response:', result);
-            
-            if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-                console.error('Invalid OpenAI API response:', result);
-                throw new Error('Invalid response from OpenAI API');
-            }
-            
-            const ingredientsText = result.choices[0].message.content;
-            console.log('🤖 AI Response Text:', ingredientsText);
-            
-            if (!ingredientsText || ingredientsText.trim() === '') {
-                console.error('Empty response from OpenAI API');
-                throw new Error('No content in OpenAI API response');
-            }
-            
-            // Parse ingredients from the structured response
-            let ingredients = [];
-            
-            // Look for the INGREDIENTS: prefix
-            if (ingredientsText.includes('INGREDIENTS:')) {
-                const ingredientsPart = ingredientsText.split('INGREDIENTS:')[1].trim();
-                
-                // Handle special cases
-                if (ingredientsPart === 'BARCODE_DETECTED') {
-                    throw new Error('Barcode detected. Please scan the ingredient list on the packaging or enter ingredients manually for accurate halal analysis.');
-                }
-                
-                if (ingredientsPart === 'NO_INGREDIENTS_DETECTED') {
-                    throw new Error('No ingredients detected in the image. Please ensure the ingredient list is clearly visible and try again.');
-                }
-                
-                // Parse comma-separated ingredients
-                ingredients = ingredientsPart.split(',')
-                    .map(i => i.trim())
-                    .filter(i => i && i.length > 1 && !i.toLowerCase().includes('ingredients'));
-            } else {
-                // Fallback: try to extract ingredients from unstructured response
-                const lines = ingredientsText.split('\n');
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine && trimmedLine.length > 2 && 
-                        !trimmedLine.toLowerCase().includes('analysis') && 
-                        !trimmedLine.toLowerCase().includes('barcode') &&
-                        !trimmedLine.startsWith('I can see') &&
-                        !trimmedLine.includes('://')) {
-                        
-                        if (trimmedLine.includes(',')) {
-                            const splitIngredients = trimmedLine.split(',')
-                                .map(i => i.trim())
-                                .filter(i => i && i.length > 1);
-                            ingredients.push(...splitIngredients);
-                        } else {
-                            ingredients.push(trimmedLine);
-                        }
-                    }
-                }
-            }
-            
-            if (ingredients.length === 0) {
-                throw new Error('No ingredients could be extracted from the image. Please ensure the ingredient list is clearly visible.');
-            }
-            
-            // Clean up ingredients (remove numbers, parentheses, etc.)
-            ingredients = ingredients.map(ingredient => {
-                return ingredient.replace(/^\d+\.?\s*/, '') // Remove leading numbers
-                    .replace(/\([^)]*\)/g, '') // Remove content in parentheses
-                    .replace(/\s+/g, ' ') // Normalize spaces
-                    .trim();
-            }).filter(ingredient => ingredient.length > 1);
-            
-            return ingredients;
-        }
-
-        async function analyzeIngredients(ingredients) {
-            showScreen('loading-screen');
-            
-            try {
-                const results = [];
-                
-                // First, check local database for known ingredients
-                for (const ingredient of ingredients) {
-                    const lowerIngredient = ingredient.toLowerCase();
-                    const cached = ingredientDatabase[lowerIngredient];
-                    
-                    if (cached) {
-                        results.push({
-                            name: ingredient,
-                            status: cached.status,
-                            reason_en: cached.reason_en,
-                            reason_ar: cached.reason_ar,
-                            alternatives: getAlternatives(ingredient, cached.status)
-                        });
-                    } else {
-                        // Use OpenAI API for unknown ingredients
-                        const analysis = await analyzeIngredientWithAI(ingredient);
-                        results.push(analysis);
-                        
-                        // Cache the result
-                        ingredientDatabase[lowerIngredient] = {
-                            status: analysis.status,
-                            reason_en: analysis.reason_en,
-                            reason_ar: analysis.reason_ar
-                        };
-                    }
-                }
-                
-                displayResults(results);
-                saveToHistory(results);
-                
-                // Update scan count
-                dailyScans++;
-                updateScanCounter();
-                saveUserData();
-                
-                showScreen('results-screen');
-                
-            } catch (error) {
-                console.error('Error analyzing ingredients:', error);
-                showError(currentLanguage === 'ar' ? 
-                    'خطأ في تحليل المكونات' : 
-                    'Error analyzing ingredients');
-                showScreen('home-screen');
-            }
-        }
-
-        async function analyzeIngredientWithAI(ingredient) {
-            // For development: Replace with your API key
-            // For production: This will be replaced during Netlify build process
-            const OPENAI_API_KEY = window.HALALDETECT_CONFIG?.apiKey || 'YOUR_OPENAI_API_KEY_HERE';
-            
-            const prompt = `Analyze this ingredient for halal compliance: "${ingredient}". 
-
-Analyze this ingredient for halal compliance. Classify as HALAL, SUSPICIOUS, or HARAM and explain why in simple English. 
-
-When there are different opinions between Islamic schools of thought, be SPECIFIC about which madhabs hold which positions and their reasoning. For example:
-
-- 'Hanafi scholars consider this haram because...'
-- 'Maliki scholars permit this due to...'  
-- 'Shafi'i and Hanbali schools agree that...'
-- 'There is consensus among all four madhabs that...'
-
-Always cite the specific madhab when mentioning scholarly differences, and explain the Islamic reasoning behind each position. Avoid vague phrases like 'some scholars' or 'some schools of thought' - name the actual madhab and their rationale.
-
-Consider Islamic dietary laws and provide practical guidance for Muslim consumers. Provide explanation in both English and Arabic.
-            Respond in this JSON format:
-            {
-                "status": "halal/suspicious/haram",
-                "reason_en": "English explanation with scholarly differences noted respectfully",
-                "reason_ar": "Arabic explanation"
-            }`;
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 300
-                })
-            });
-
-            const result = await response.json();
-            const analysis = JSON.parse(result.choices[0].message.content);
-            
-            return {
-                name: ingredient,
-                status: analysis.status,
-                reason_en: analysis.reason_en,
-                reason_ar: analysis.reason_ar,
-                alternatives: getAlternatives(ingredient, analysis.status)
-            };
-        }
-
-        function getAlternatives(ingredient, status) {
-            if (status === 'halal') return [];
-            
-            const alternatives = [];
-            const lowerIngredient = ingredient.toLowerCase();
-            
-            if (lowerIngredient.includes('gelatin')) {
-                alternatives.push({
-                    name: currentLanguage === 'ar' ? 'جيلاتين حلال' : 'Halal Gelatin',
-                    link: 'https://amazon.com/halal-gelatin'
-                });
-            }
-            
-            if (lowerIngredient.includes('pork') || lowerIngredient.includes('bacon')) {
-                alternatives.push({
-                    name: currentLanguage === 'ar' ? 'لحم حلال' : 'Halal Meat',
-                    link: 'https://zabihah.com'
-                });
-            }
-            
-            return alternatives;
-        }
-
-        function displayResults(results) {
-            const container = document.getElementById('results-container');
-            container.innerHTML = '';
-            
-            results.forEach(result => {
-                const item = document.createElement('div');
-                item.className = `ingredient-item ${result.status}`;
-                
-                const reason = currentLanguage === 'ar' ? result.reason_ar : result.reason_en;
-                const statusText = result.status.toUpperCase();
-                
-                item.innerHTML = `
-                    <div class="ingredient-header">
-                        <div class="ingredient-name">${result.name}</div>
-                        <div class="ingredient-status status-${result.status}">${statusText}</div>
-                    </div>
-                    <div class="ingredient-explanation">${reason}</div>
-                    <div class="alternative-links">
-                        ${result.alternatives.map(alt => 
-                            `<a href="${alt.link}" class="alternative-link" target="_blank">${alt.name}</a>`
-                        ).join('')}
-                    </div>
-                `;
-                
-                container.appendChild(item);
-            });
-            
-            // Show success message after results
-            setTimeout(() => {
-                const successMsg = document.createElement('div');
-                successMsg.className = 'success-message';
-                successMsg.innerHTML = `
-                    ✅ ${currentLanguage === 'ar' ? 'تم تحليل المكونات بنجاح!' : 'Ingredients analyzed successfully!'}
-                    <br><small>${currentLanguage === 'ar' ? 
-                        'هل أعجبك هذا التطبيق؟ قم بتثبيته للوصول السريع!' : 
-                        'Like this app? Install it for quick access!'}</small>
-                `;
-                container.insertBefore(successMsg, container.firstChild);
-            }, 500);
-        }
-
-        function saveToHistory(results) {
-            scanHistory.unshift({
-                date: new Date().toISOString(),
-                results: results,
-                summary: `${results.length} ingredients analyzed`
-            });
-            
-            // Keep only last 10 scans
-            scanHistory = scanHistory.slice(0, 10);
-            localStorage.setItem('halaldetect-history', JSON.stringify(scanHistory));
-        }
-
-        function loadHistory() {
-            scanHistory = JSON.parse(localStorage.getItem('halaldetect-history') || '[]');
-            displayHistory();
-        }
-
-        function displayHistory() {
-            const container = document.getElementById('history-list');
-            container.innerHTML = '';
-            
-            if (scanHistory.length === 0) {
-                container.innerHTML = `<p>${currentLanguage === 'ar' ? 'لا توجد فحوصات سابقة' : 'No previous scans'}</p>`;
-                return;
-            }
-            
-            scanHistory.forEach((scan, index) => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.onclick = () => showHistoryDetails(index);
-                
-                const date = new Date(scan.date).toLocaleDateString();
-                const halalCount = scan.results.filter(r => r.status === 'halal').length;
-                const haramCount = scan.results.filter(r => r.status === 'haram').length;
-                const suspiciousCount = scan.results.filter(r => r.status === 'suspicious').length;
-                
-                item.innerHTML = `
-                    <div class="history-date">${date}</div>
-                    <div class="history-summary">${scan.summary}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">
-                        <span style="color: var(--halal-green);">✅ ${halalCount}</span>
-                        <span style="color: var(--suspicious-yellow);">⚠️ ${suspiciousCount}</span>
-                        <span style="color: var(--haram-red);">❌ ${haramCount}</span>
-                    </div>
-                `;
-                
-                container.appendChild(item);
-            });
-        }
-
-        function showHistoryDetails(index) {
-            const scan = scanHistory[index];
-            displayResults(scan.results);
-            showScreen('results-screen');
-        }
-
-        function shareResults() {
-            const resultsContainer = document.getElementById('results-container');
-            const text = currentLanguage === 'ar' ? 
-                'شاهد نتائج فحص الحلال من HalalDetect' : 
-                'Check out my halal scan results from HalalDetect';
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'HalalDetect Results',
-                    text: text,
-                    url: window.location.href
-                });
-            } else {
-                // Fallback to copying to clipboard
-                navigator.clipboard.writeText(`${text}\n${window.location.href}`);
-                showSuccess(currentLanguage === 'ar' ? 'تم نسخ الرابط' : 'Link copied to clipboard');
-            }
-        }
-
-        function showUpgradePrompt() {
-            const message = currentLanguage === 'ar' ? 
-                'لقد استنفدت فحوصاتك المجانية لهذا اليوم. قم بالترقية للحصول على فحوصات غير محدودة!' :
-                'You\'ve used all your free scans for today. Upgrade for unlimited scans!';
-            
-            const upgrade = confirm(message);
-            if (upgrade) {
-                upgradeToPremium();
-            }
-        }
-
-        function upgradeToPremium() {
-            // In a real app, this would integrate with Stripe or another payment processor
-            alert(currentLanguage === 'ar' ? 
-                'ميزة الدفع قيد التطوير. سيتم إضافة الدفع الآمن قريباً!' :
-                'Payment feature coming soon! Secure payment integration will be added.');
-        }
-
-        function continueFree() {
-            document.getElementById('premium-banner').classList.add('hidden');
-        }
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        dismissInstallPrompt();
-                    }
-                });
-            } else {
-                // Fallback instructions
-                alert(currentLanguage === 'ar' ? 
-                    'لإضافة التطبيق إلى الشاشة الرئيسية:\n1. اضغط على زر المشاركة\n2. اختر "إضافة إلى الشاشة الرئيسية"' :
-                    'To add to home screen:\n1. Tap the share button\n2. Select "Add to Home Screen"');
-            }
-        }
-
-        function dismissInstallPrompt() {
-            document.getElementById('install-prompt').classList.add('hidden');
-        }
-
-        function setupPWA() {
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-            });
-            
-            window.addEventListener('appinstalled', () => {
-                dismissInstallPrompt();
-            });
-        }
-
-        function toggleSetting(setting) {
-            const toggle = event.target;
-            toggle.classList.toggle('active');
-            
-            // Save setting to localStorage
-            const settings = JSON.parse(localStorage.getItem('halaldetect-settings') || '{}');
-            settings[setting] = toggle.classList.contains('active');
-            localStorage.setItem('halaldetect-settings', JSON.stringify(settings));
-        }
-
-        function toggleBusinessFeatures() {
-            if (!isPremium) {
-                showUpgradePrompt();
-                return;
-            }
-            toggleSetting('business');
-        }
-
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            document.querySelector('.main-content').prepend(errorDiv);
-            setTimeout(() => errorDiv.remove(), 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success-message';
-            successDiv.textContent = message;
-            document.querySelector('.main-content').prepend(successDiv);
-            setTimeout(() => successDiv.remove(), 3000);
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const base64 = reader.result.split(',')[1];
-                    resolve(base64);
-                };
-                reader.onerror = reject;
-            });
-        }
-
-        // Service Worker Registration with Update Detection
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then((registration) => {
-                        console.log('SW registered: ', registration);
-                        
-                        // Check for updates every time the page loads
-                        registration.update();
-                        
-                        // Listen for updates
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    showUpdateNotification();
-                                }
-                            });
-                        });
-                    })
-                    .catch((registrationError) => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-                
-                // Listen for messages from service worker
-                navigator.serviceWorker.addEventListener('message', event => {
-                    if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
-                        showUpdateNotification();
-                    }
-                });
-            });
-        }
-
-        // Show update notification to user
-        function showUpdateNotification() {
-            // Avoid showing multiple notifications
-            if (document.querySelector('.update-notification')) return;
-            
-            const updateDiv = document.createElement('div');
-            updateDiv.className = 'update-notification';
-            updateDiv.innerHTML = `
-                <div style="
-                    position: fixed;
-                    top: 70px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: #4CAF50;
-                    color: white;
-                    padding: 1rem;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    z-index: 1000;
-                    text-align: center;
-                    max-width: 300px;
-                ">
-                    <div style="margin-bottom: 0.5rem;">🔄 Update Available!</div>
-                    <div style="font-size: 0.9rem; margin-bottom: 1rem;">New features and improvements are ready.</div>
-                    <button onclick="location.reload()" style="
-                        background: white;
-                        color: #4CAF50;
-                        border: none;
-                        padding: 0.5rem 1rem;
-                        border-radius: 4px;
-                        margin-right: 0.5rem;
-                        cursor: pointer;
-                        font-weight: bold;
-                    ">Update Now</button>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: transparent;
-                        color: white;
-                        border: 1px solid white;
-                        padding: 0.5rem 1rem;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    ">Later</button>
-                </div>
-            `;
-            document.body.appendChild(updateDiv);
-            
-            // Auto remove after 15 seconds
-            setTimeout(() => {
-                if (updateDiv.parentElement) {
-                    updateDiv.remove();
-                }
-            }, 15000);
-        }
-
-        function sendContactMessage() {
-            const messageText = document.getElementById('contact-message').value;
-            if (!messageText.trim()) {
-                showError(currentLanguage === 'ar' ? 'يرجى كتابة رسالة' : 'Please enter a message');
-                return;
-            }
-            
-            // Create mailto link
-            const subject = encodeURIComponent('HalalDetect Contact Form');
-            const body = encodeURIComponent(messageText);
-            const mailtoLink = `mailto:Eterna.eneral@gmail.com?subject=${subject}&body=${body}`;
-            
-            // Open email client
-            window.location.href = mailtoLink;
-            
-            // Show success message
-            showSuccess(currentLanguage === 'ar' ? 'تم فتح تطبيق البريد الإلكتروني' : 'Email client opened');
-            
-            // Clear the message
-            document.getElementById('contact-message').value = '';
-        }
-    </script>
+    <!-- JavaScript -->
+    <script src="/js/common.js"></script>
 </body>
 </html>

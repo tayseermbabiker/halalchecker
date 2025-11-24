@@ -1,0 +1,10 @@
+# robots.txt for HalalDetect Islamic Parenting Hub
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://halaldetect.com/sitemap.xml
+
+# Crawl-delay (optional, helps prevent server overload)
+Crawl-delay: 1
