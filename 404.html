@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - HalalDetect</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#218089">
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+    <main style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(33, 128, 137, 0.05) 0%, rgba(253, 248, 243, 1) 100%);">
+        <div class="container-narrow" style="text-align: center; padding: var(--spacing-2xl);">
+            <h1 style="font-size: 120px; color: var(--primary-teal); margin-bottom: var(--spacing-md);">404</h1>
+            <h2 style="margin-bottom: var(--spacing-md);">Page Not Found</h2>
+            <p style="font-size: var(--body-text-large); color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                Even the best travelers sometimes take a wrong turn.
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-xl);">
+                The page you're looking for doesn't exist. Let's get you back on track.
+            </p>
+            <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap;">
+                <a href="/" class="btn btn-primary btn-large">Go to Homepage</a>
+                <a href="/free-resources.html" class="btn btn-secondary btn-large">Browse Resources</a>
+            </div>
+            <div style="margin-top: var(--spacing-xl);">
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Or try searching:</p>
+                <form id="searchForm" style="max-width: 500px; margin: 0 auto; display: flex; gap: var(--spacing-sm);">
+                    <input type="text" placeholder="Search articles and resources..." style="flex: 1; padding: 0.75rem; border: 2px solid var(--warm-gray); border-radius: var(--radius-sm);">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = e.target.querySelector('input').value;
+            if (query) {
+                window.location.href = '/blog.html?search=' + encodeURIComponent(query);
+            }
+        });
+    </script>
+</body>
+</html>
