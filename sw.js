@@ -1,325 +1,270 @@
-const CACHE_VERSION = '1.0.1'; // Increment this for updates
-const CACHE_NAME = `halalchecker-v${CACHE_VERSION}`;
-const STATIC_CACHE = `halalchecker-static-v${CACHE_VERSION}`;
-const DYNAMIC_CACHE = `halalchecker-dynamic-v${CACHE_VERSION}`;
+const CACHE_VERSION = '2.0.0';
+const CACHE_NAME = `halaldetect-v${CACHE_VERSION}`;
+const STATIC_CACHE = `halaldetect-static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `halaldetect-dynamic-v${CACHE_VERSION}`;
 
-// Resources to cache immediately
+// Core resources to cache immediately
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+    '/',
+    '/index.html',
+    '/offline.html',
+    '/manifest.json',
+    '/css/design-system.css',
+    '/css/components.css',
+    '/js/common.js',
+    '/assets/favicon.svg'
+];
+
+// Pages to cache for offline access
+const PAGES_TO_CACHE = [
+    '/by-age.html',
+    '/challenges.html',
+    '/islamic-education.html',
+    '/prophet-stories.html',
+    '/free-resources.html',
+    '/about.html',
+    '/contact.html'
 ];
 
 // Resources that can be cached dynamically
 const CACHEABLE_DOMAINS = [
-  'fonts.googleapis.com',
-  'fonts.gstatic.com',
-  'api.openai.com'
+    'fonts.googleapis.com',
+    'fonts.gstatic.com'
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', event => {
-  console.log('[SW] Installing service worker...');
-  
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then(cache => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { credentials: 'same-origin' })));
-    }).catch(error => {
-      console.error('[SW] Failed to cache static assets:', error);
-    })
-  );
-  
-  // Skip waiting to activate immediately
-  self.skipWaiting();
+    console.log('[SW] Installing service worker...');
+
+    event.waitUntil(
+        caches.open(STATIC_CACHE).then(cache => {
+            console.log('[SW] Caching static assets');
+            return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { credentials: 'same-origin' })));
+        }).catch(error => {
+            console.error('[SW] Failed to cache static assets:', error);
+        })
+    );
+
+    self.skipWaiting();
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating service worker...');
-  
-  event.waitUntil(
-    Promise.all([
-      // Clean up old caches
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      }),
-      // Claim all clients
-      self.clients.claim()
-    ])
-  );
+    console.log('[SW] Activating service worker...');
+
+    event.waitUntil(
+        Promise.all([
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+                            console.log('[SW] Deleting old cache:', cacheName);
+                            return caches.delete(cacheName);
+                        }
+                    })
+                );
+            }),
+            self.clients.claim()
+        ])
+    );
 });
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
-  const { request } = event;
-  const url = new URL(request.url);
-  
-  // Skip caching for non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
-  
-  // Skip caching for Chrome extension requests
-  if (url.protocol === 'chrome-extension:') {
-    return;
-  }
-  
-  // Handle API requests specially
-  if (url.hostname === 'api.openai.com') {
-    event.respondWith(handleAPIRequest(request));
-    return;
-  }
-  
-  // Handle static assets
-  if (STATIC_ASSETS.includes(url.pathname) || url.pathname === '/') {
-    event.respondWith(handleStaticRequest(request));
-    return;
-  }
-  
-  // Handle other requests
-  event.respondWith(handleDynamicRequest(request));
+    const { request } = event;
+    const url = new URL(request.url);
+
+    if (request.method !== 'GET') return;
+    if (url.protocol === 'chrome-extension:') return;
+
+    // Handle HTML pages
+    if (request.headers.get('accept')?.includes('text/html')) {
+        event.respondWith(handlePageRequest(request));
+        return;
+    }
+
+    // Handle static assets
+    if (STATIC_ASSETS.includes(url.pathname)) {
+        event.respondWith(handleStaticRequest(request));
+        return;
+    }
+
+    // Handle other requests
+    event.respondWith(handleDynamicRequest(request));
 });
 
-// Handle static asset requests (network first for main HTML, then cache)
-async function handleStaticRequest(request) {
-  try {
-    // For the main HTML file, try network first to get updates
-    if (request.url.includes('index.html') || request.url.endsWith('/')) {
-      try {
-        console.log('[SW] Checking for updates:', request.url);
+// Handle page requests (network first, fallback to cache, then offline page)
+async function handlePageRequest(request) {
+    try {
         const networkResponse = await fetch(request);
-        
+
         if (networkResponse.ok) {
-          const cache = await caches.open(STATIC_CACHE);
-          cache.put(request, networkResponse.clone());
-          
-          // Notify clients about the update
-          notifyClientsOfUpdate();
-          
-          return networkResponse;
+            const cache = await caches.open(STATIC_CACHE);
+            cache.put(request, networkResponse.clone());
         }
-      } catch (networkError) {
-        console.log('[SW] Network failed, falling back to cache');
-      }
+
+        return networkResponse;
+    } catch (error) {
+        console.log('[SW] Network failed for page, trying cache:', request.url);
+
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        // Return offline page
+        const offlinePage = await caches.match('/offline.html');
+        if (offlinePage) {
+            return offlinePage;
+        }
+
+        return new Response(getOfflineFallbackHTML(), {
+            headers: { 'Content-Type': 'text/html' }
+        });
     }
-    
-    // For other assets or if network fails, use cache first
+}
+
+// Handle static asset requests (cache first, fallback to network)
+async function handleStaticRequest(request) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.log('[SW] Serving from cache:', request.url);
-      return cachedResponse;
+        return cachedResponse;
     }
-    
-    console.log('[SW] Fetching from network:', request.url);
-    const networkResponse = await fetch(request);
-    
-    // Cache successful responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
+
+    try {
+        const networkResponse = await fetch(request);
+
+        if (networkResponse.ok) {
+            const cache = await caches.open(STATIC_CACHE);
+            cache.put(request, networkResponse.clone());
+        }
+
+        return networkResponse;
+    } catch (error) {
+        console.error('[SW] Static request failed:', error);
+        return new Response('Offline', { status: 503 });
     }
-    
-    return networkResponse;
-  } catch (error) {
-    console.error('[SW] Static request failed:', error);
-    
-    // Return offline fallback for HTML pages
-    if (request.headers.get('accept').includes('text/html')) {
-      return new Response(
-        getOfflineFallbackHTML(),
-        { headers: { 'Content-Type': 'text/html' } }
-      );
-    }
-    
-    return new Response('Offline', { status: 503 });
-  }
 }
 
 // Handle dynamic requests (network first, fallback to cache)
 async function handleDynamicRequest(request) {
-  try {
-    console.log('[SW] Dynamic request:', request.url);
-    const networkResponse = await fetch(request);
-    
-    // Cache successful responses from cacheable domains
-    if (networkResponse.ok && CACHEABLE_DOMAINS.some(domain => request.url.includes(domain))) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.log('[SW] Network failed, trying cache:', request.url);
-    
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    return new Response('Offline', { status: 503 });
-  }
-}
+    try {
+        const networkResponse = await fetch(request);
 
-// Handle API requests (network only with error handling)
-async function handleAPIRequest(request) {
-  try {
-    const response = await fetch(request);
-    return response;
-  } catch (error) {
-    console.error('[SW] API request failed:', error);
-    
-    // Return structured error response for API failures
-    return new Response(
-      JSON.stringify({
-        error: 'Network error',
-        message: 'Unable to connect to the service. Please check your internet connection.',
-        offline: true
-      }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-  }
+        if (networkResponse.ok && CACHEABLE_DOMAINS.some(domain => request.url.includes(domain))) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, networkResponse.clone());
+        }
+
+        return networkResponse;
+    } catch (error) {
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        return new Response('Offline', { status: 503 });
+    }
 }
 
 // Offline fallback HTML
 function getOfflineFallbackHTML() {
-  return `
+    return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>HalalChecker - Offline</title>
+        <title>Offline - HalalDetect</title>
         <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                font-family: 'Segoe UI', sans-serif;
-                text-align: center;
+                font-family: 'Inter', -apple-system, sans-serif;
+                background: #FDF8F3;
+                color: #5E5240;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 padding: 2rem;
-                background: #f5f5f5;
-                color: #333;
             }
-            .offline-container {
+            .container {
                 max-width: 400px;
-                margin: 0 auto;
-                background: white;
-                padding: 2rem;
-                border-radius: 12px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                text-align: center;
             }
-            .offline-icon {
-                font-size: 4rem;
+            .logo {
+                font-size: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .logo-bold { font-weight: 700; color: #218089; }
+            .logo-regular { font-weight: 400; color: #5E5240; }
+            h1 {
+                font-family: 'Poppins', sans-serif;
+                color: #1A6873;
                 margin-bottom: 1rem;
             }
-            .retry-btn {
-                background: #2E7D32;
+            p {
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+            }
+            .btn {
+                display: inline-block;
+                background: #218089;
                 color: white;
-                border: none;
-                padding: 1rem 2rem;
-                border-radius: 25px;
+                padding: 0.875rem 1.75rem;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 500;
                 cursor: pointer;
-                margin-top: 1rem;
+                border: none;
                 font-size: 1rem;
             }
-            .retry-btn:hover {
-                background: #1B5E20;
-            }
+            .btn:hover { background: #1A6873; }
         </style>
     </head>
     <body>
-        <div class="offline-container">
-            <div class="offline-icon">🕌</div>
-            <h1>HalalChecker</h1>
-            <h2>You're Offline</h2>
-            <p>Please check your internet connection and try again.</p>
-            <p>Some features may be available offline including previously scanned ingredients.</p>
-            <button class="retry-btn" onclick="window.location.reload()">Retry</button>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-bold">Halal</span><span class="logo-regular">Detect</span>
+            </div>
+            <h1>You're Offline</h1>
+            <p>It looks like you've lost your internet connection. Please check your connection and try again.</p>
+            <button class="btn" onclick="window.location.reload()">Try Again</button>
         </div>
     </body>
     </html>
-  `;
+    `;
 }
 
-// Handle push notifications (future feature)
+// Handle push notifications
 self.addEventListener('push', event => {
-  if (!event.data) return;
-  
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/icon-192.png',
-    badge: '/icon-72.png',
-    tag: 'halalchecker-notification',
-    renotify: true,
-    actions: [
-      {
-        action: 'open',
-        title: 'Open App'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
-    ]
-  };
-  
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'HalalChecker', options)
-  );
+    if (!event.data) return;
+
+    const data = event.data.json();
+    const options = {
+        body: data.body,
+        icon: '/assets/favicon.svg',
+        badge: '/assets/favicon.svg',
+        tag: 'halaldetect-notification',
+        renotify: true
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'HalalDetect', options)
+    );
 });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  
-  if (event.action === 'open' || !event.action) {
-    event.waitUntil(
-      clients.openWindow('/')
-    );
-  }
-});
-
-// Background sync for failed API requests (future feature)
-self.addEventListener('sync', event => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(
-      // Handle background sync logic
-      console.log('[SW] Background sync triggered')
-    );
-  }
-});
-
-// Periodic background sync (future feature)
-self.addEventListener('periodicsync', event => {
-  if (event.tag === 'update-ingredient-database') {
-    event.waitUntil(
-      // Update local ingredient database
-      console.log('[SW] Periodic sync: updating ingredient database')
-    );
-  }
+    event.notification.close();
+    event.waitUntil(clients.openWindow('/'));
 });
 
 // Notify clients about updates
-function notifyClientsOfUpdate() {
-  self.clients.matchAll().then(clients => {
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'UPDATE_AVAILABLE',
-        message: 'New version available! Reload to get the latest features.'
-      });
-    });
-  });
-}
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
 
-console.log('[SW] Service worker loaded successfully');
+console.log('[SW] HalalDetect service worker loaded');

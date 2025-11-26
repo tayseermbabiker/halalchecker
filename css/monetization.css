@@ -1,0 +1,314 @@
+/* Monetization Component Styles */
+
+/* Ad Placeholder - Generic */
+.ad-placeholder {
+    background-color: rgba(167, 169, 169, 0.1);
+    border: 1px dashed var(--warm-gray);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--warm-gray);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* In-Article Ad (between sections) */
+.ad-in-article {
+    width: 100%;
+    height: 250px;
+    margin: var(--spacing-xl) 0;
+}
+
+/* Sidebar Ad */
+.ad-sidebar {
+    width: 100%;
+    height: 250px;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Sidebar Sticky Ad */
+.ad-sidebar-sticky {
+    width: 100%;
+    height: 600px;
+}
+
+/* Header Banner Ad */
+.ad-header-banner {
+    width: 100%;
+    height: 90px;
+    max-width: 728px;
+    margin: 0 auto var(--spacing-md);
+}
+
+/* Footer Banner Ad */
+.ad-footer-banner {
+    width: 100%;
+    height: 90px;
+    max-width: 728px;
+    margin: var(--spacing-lg) auto;
+}
+
+/* Mobile Anchor Ad */
+.ad-mobile-anchor {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    z-index: 999;
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .ad-mobile-anchor {
+        display: flex;
+    }
+
+    /* Add bottom padding to body when mobile anchor is present */
+    body.has-mobile-ad {
+        padding-bottom: 50px;
+    }
+}
+
+/* Affiliate Product Card */
+.affiliate-product {
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+}
+
+.affiliate-badge {
+    display: inline-block;
+    background-color: rgba(230, 129, 97, 0.1);
+    color: var(--gentle-orange);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.affiliate-product-image {
+    width: 100%;
+    height: 200px;
+    background-color: var(--cream);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.affiliate-product h4 {
+    margin-bottom: var(--spacing-sm);
+}
+
+.affiliate-product p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.affiliate-product .price {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--deep-teal);
+    margin-bottom: var(--spacing-md);
+}
+
+.affiliate-product .btn {
+    width: 100%;
+}
+
+/* Affiliate Product Grid */
+.affiliate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin: var(--spacing-xl) 0;
+}
+
+/* Affiliate Comparison Table */
+.affiliate-comparison {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--spacing-lg) 0;
+    font-size: 0.9rem;
+}
+
+.affiliate-comparison th,
+.affiliate-comparison td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.affiliate-comparison th {
+    background-color: var(--cream);
+    font-weight: 600;
+}
+
+.affiliate-comparison tr:hover {
+    background-color: rgba(33, 128, 137, 0.05);
+}
+
+.affiliate-comparison .product-name {
+    font-weight: 500;
+    color: var(--deep-teal);
+}
+
+.affiliate-comparison .check {
+    color: var(--sage-green);
+}
+
+.affiliate-comparison .cross {
+    color: var(--warm-gray);
+}
+
+/* Recommended Products Section */
+.recommended-products {
+    background: linear-gradient(135deg, rgba(230, 129, 97, 0.08) 0%, rgba(253, 248, 243, 1) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-xl) 0;
+}
+
+.recommended-products h3 {
+    margin-bottom: var(--spacing-md);
+}
+
+.recommended-products .affiliate-badge {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Sponsored Content Label */
+.sponsored-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Native Ad / Sponsored Post */
+.sponsored-post {
+    background-color: white;
+    border: 1px solid rgba(230, 129, 97, 0.3);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin: var(--spacing-lg) 0;
+}
+
+.sponsored-post .sponsored-label {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: rgba(230, 129, 97, 0.1);
+}
+
+.sponsored-post .content {
+    padding: var(--spacing-lg);
+}
+
+/* Email Opt-in (Lead Magnet) */
+.lead-magnet {
+    background: linear-gradient(135deg, var(--primary-teal) 0%, var(--deep-teal) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    color: white;
+    margin: var(--spacing-xl) 0;
+}
+
+.lead-magnet h3 {
+    color: white;
+    margin-bottom: var(--spacing-sm);
+}
+
+.lead-magnet p {
+    opacity: 0.9;
+    margin-bottom: var(--spacing-lg);
+}
+
+.lead-magnet .btn {
+    background-color: white;
+    color: var(--primary-teal);
+}
+
+.lead-magnet .btn:hover {
+    background-color: var(--cream);
+}
+
+.lead-magnet input[type="email"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+    font-size: 1rem;
+}
+
+/* Course/Product Promo Box */
+.product-promo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    background-color: var(--cream);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-xl) 0;
+}
+
+@media (min-width: 768px) {
+    .product-promo {
+        grid-template-columns: 200px 1fr;
+    }
+}
+
+.product-promo-image {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(135deg, var(--sage-green) 0%, var(--primary-teal) 100%);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+}
+
+.product-promo h4 {
+    margin-bottom: var(--spacing-sm);
+}
+
+.product-promo p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Disclosure Notice */
+.affiliate-disclosure {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: var(--spacing-sm);
+    background-color: rgba(167, 169, 169, 0.1);
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-md) 0;
+}
+
+.affiliate-disclosure a {
+    color: var(--primary-teal);
+}
+
+/* Hide ads for premium users (future) */
+.premium-user .ad-placeholder,
+.premium-user .ad-in-article,
+.premium-user .ad-sidebar {
+    display: none;
+}
